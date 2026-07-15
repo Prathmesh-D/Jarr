@@ -34,7 +34,6 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password);
       setIsRedirecting(true);
-      await new Promise(resolve => setTimeout(resolve, 800));
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setServerError(err.response?.data?.message || 'Invalid email or password.');
@@ -48,7 +47,6 @@ export default function LoginPage() {
     try {
       await googleLogin(credentialResponse.credential);
       setIsRedirecting(true);
-      await new Promise(resolve => setTimeout(resolve, 800));
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setServerError(err.response?.data?.message || 'Google login failed.');
