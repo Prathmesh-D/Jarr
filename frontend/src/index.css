@@ -1,0 +1,223 @@
+/* Jarr — Minimalist Design System */
+/* Single typeface for body: Inter. Single typeface for headings: JetBrains Mono */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Custom Properties ──────────────────────────────────────────────── */
+:root {
+  /* Surfaces */
+  --j-bg:             #F8F8F7;
+  --j-surface:        #FFFFFF;
+  --j-surface-raised: #F2F2F1;
+  --j-glow:           rgba(0, 120, 255, 0.06); /* Clean, vibrant sky-blue glow for light mode */
+
+  /* Borders */
+  --j-border:         #E4E4E3;
+  --j-border-strong:  #C8C8C7;
+
+  /* Ink scale */
+  --j-ink:   #0A0A0A;
+  --j-ink-2: #3A3A3A;
+  --j-ink-3: #787876;
+  --j-ink-4: #B0B0AE;
+
+  /* Accent */
+  --j-accent:     #3D5A80;
+  --j-accent-dim: #3D5A8018;
+
+  /* Semantic */
+  --j-positive:     #1E6B4A;
+  --j-positive-dim: #1E6B4A14;
+  --j-negative:     #8B2020;
+  --j-negative-dim: #8B202014;
+  --j-warning:      #7A5C1E;
+  --j-warning-dim:  #7A5C1E14;
+
+  /* Overlay */
+  --j-overlay: rgba(10,10,10,0.45);
+
+  /* Motion */
+  --j-ease:       cubic-bezier(0.16, 1, 0.3, 1);
+  --j-ease-out:   cubic-bezier(0.0, 0.0, 0.2, 1);
+  --j-dur-fast:   100ms;
+  --j-dur-base:   200ms;
+  --j-dur-route:  250ms;
+  --j-dur-modal:  220ms;
+}
+
+.dark {
+  /* Surfaces */
+  --j-bg:             #0A0A0A;
+  --j-surface:        #151515;
+  --j-surface-raised: #222222;
+  --j-glow:           rgba(255,255,255,0.05);
+
+  /* Borders */
+  --j-border:         #333333;
+  --j-border-strong:  #444444;
+
+  /* Ink scale */
+  --j-ink:   #FFFFFF;
+  --j-ink-2: #E0E0E0;
+  --j-ink-3: #999999;
+  --j-ink-4: #666666;
+
+  /* Accent */
+  --j-accent:     #638fb8;
+  --j-accent-dim: #638fb822;
+
+  /* Semantic */
+  --j-positive:     #31a373;
+  --j-positive-dim: #31a37322;
+  --j-negative:     #c24444;
+  --j-negative-dim: #c2444422;
+  --j-warning:      #bd943f;
+  --j-warning-dim:  #bd943f22;
+
+  /* Overlay */
+  --j-overlay: rgba(0,0,0,0.75);
+}
+
+/* ── Base resets ────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Fluid scaling on mobile: Min 17px, scales up based on 5vw, max 20px. 
+     At 360px screen width, 5vw is 18px. At 400px it's 20px. 
+     This guarantees everything is about 12.5% to 25% larger on mobile! */
+  font-size: clamp(17.5px, 5vw, 20px);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--j-ink);
+  background-color: var(--j-bg);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Tabular numbers for amounts ────────────────────────────────────────── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Label overline style ───────────────────────────────────────────────── */
+.label-overline {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--j-ink-3);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--j-border-strong); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--j-ink-4); }
+
+/* ── Focus ring ─────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--j-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Standard transition ────────────────────────────────────────────────── */
+.transition-ui {
+  transition: all var(--j-dur-base) var(--j-ease);
+}
+
+/* ── Skeleton shimmer ───────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--j-surface-raised) 25%,
+    var(--j-border) 50%,
+    var(--j-surface-raised) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+/* ── Page transition ────────────────────────────────────────────────────── */
+.page-enter {
+  opacity: 0;
+  transform: translateY(6px);
+}
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity var(--j-dur-route) var(--j-ease),
+              transform var(--j-dur-route) var(--j-ease);
+}
+.page-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+.page-exit-active {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity var(--j-dur-route) var(--j-ease-out),
+              transform var(--j-dur-route) var(--j-ease-out);
+}
+
+/* ── Modal transition ───────────────────────────────────────────────────── */
+.modal-enter {
+  opacity: 0;
+  transform: scale(0.97) translateY(8px);
+}
+.modal-enter-active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition: opacity var(--j-dur-modal) var(--j-ease),
+              transform var(--j-dur-modal) var(--j-ease);
+}
+.modal-exit {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+.modal-exit-active {
+  opacity: 0;
+  transform: scale(0.97) translateY(4px);
+  transition: opacity var(--j-dur-modal) var(--j-ease-out),
+              transform var(--j-dur-modal) var(--j-ease-out);
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .skeleton {
+    animation: none;
+    background: var(--j-surface-raised);
+  }
+}

@@ -1,0 +1,78 @@
+# Jarr Backend Application Configuration
+# Shared settings across all profiles
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+spring:
+  profiles:
+    active: local
+  application:
+    name: jarr-backend
+
+  # JPA / Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: none  # Flyway manages schema
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    open-in-view: false
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # Jackson
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+  # Mail Configuration
+  mail:
+    host: ${SPRING_MAIL_HOST:localhost}
+    port: ${SPRING_MAIL_PORT:1025}
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:jarr-local-dev-secret-key-that-is-at-least-256-bits-long-for-hs256}
+  access-token-expiration: 900000      # 15 minutes in ms
+  refresh-token-expiration: 604800000  # 7 days in ms
+
+# Google OAuth Configuration
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+
+# SpringDoc / Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

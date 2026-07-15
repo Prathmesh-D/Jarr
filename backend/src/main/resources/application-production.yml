@@ -1,0 +1,23 @@
+# Production Profile — Koyeb + Aiven MySQL
+# All values are injected via environment variables on Koyeb
+
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+
+  jpa:
+    show-sql: false
+
+jwt:
+  secret: ${JWT_SECRET}
+
+logging:
+  level:
+    com.jarr: INFO
+    org.springframework.security: WARN
