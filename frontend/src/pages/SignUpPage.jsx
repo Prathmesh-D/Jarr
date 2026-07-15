@@ -90,7 +90,7 @@ export default function SignUpPage() {
       {/* Subtle Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-j-glow blur-[100px] rounded-full pointer-events-none" />
 
-      {isRedirecting && <AppLoader />}
+      {(isSubmitting || isRedirecting) && <AppLoader />}
 
       <button
         onClick={() => navigate(-1)}

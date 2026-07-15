@@ -70,7 +70,7 @@ export default function LoginPage() {
       >
         <ArrowLeft size={18} strokeWidth={1.8} />
       </button>
-      {isRedirecting && <AppLoader />}
+      {(isSubmitting || isRedirecting) && <AppLoader />}
       <div className="w-full max-w-sm">
         {/* Brand mark */}
         <div className="mb-10 text-center">
