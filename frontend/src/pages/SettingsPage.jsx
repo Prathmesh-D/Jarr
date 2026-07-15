@@ -49,7 +49,7 @@ export default function SettingsPage() {
       const permission = await Notification.requestPermission();
       setNotifPermission(permission);
       if (permission === 'granted') {
-        const registration = await navigator.serviceWorker.register('/service-worker.js');
+        const registration = await navigator.serviceWorker.register('/sw.js');
         const publicKey = await notificationService.getVapidPublicKey();
         const padding = '='.repeat((4 - publicKey.length % 4) % 4);
         const base64 = (publicKey + padding).replace(/-/g, '+').replace(/_/g, '/');
