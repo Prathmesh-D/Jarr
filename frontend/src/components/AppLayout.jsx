@@ -91,10 +91,7 @@ export default function AppLayout() {
         </div>
 
         {/* Page content with fade-in transition */}
-        <div
-          key={pageKey}
-          className="max-w-2xl mx-auto px-4 pt-16 pb-6 page-enter page-enter-active"
-        >
+        <div className="max-w-2xl mx-auto px-4 pt-16 pb-6 page-enter page-enter-active">
           <Outlet />
         </div>
       </main>

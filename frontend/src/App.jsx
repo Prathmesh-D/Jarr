@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -8,19 +9,21 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AppLoader } from './components/ui/Skeleton';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
-import WelcomePage from './pages/WelcomePage';
-import LoginPage from './pages/LoginPage';
-import SignUpPage from './pages/SignUpPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import DashboardPage from './pages/DashboardPage';
-import TransactionsPage from './pages/TransactionsPage';
-import ReportsPage from './pages/ReportsPage';
-import CategoriesPage from './pages/CategoriesPage';
-import SettingsPage from './pages/SettingsPage';
-import DebtsPage from './pages/DebtsPage';
-import VerifyEmailPage from './pages/VerifyEmailPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import LogoPlayground from './pages/LogoPlayground';
+
+// Lazy loaded pages for performance optimization
+const WelcomePage = lazy(() => import('./pages/WelcomePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignUpPage = lazy(() => import('./pages/SignUpPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const DebtsPage = lazy(() => import('./pages/DebtsPage'));
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const LogoPlayground = lazy(() => import('./pages/LogoPlayground'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 1 } },
@@ -31,28 +34,30 @@ function AppRoutes() {
   if (loading) return <AppLoader />;
 
   return (
-    <Routes>
-      <Route path="/" element={<WelcomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignUpPage />} />
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/logo" element={<LogoPlayground />} />
+    <Suspense fallback={<AppLoader />}>
+      <Routes>
+        <Route path="/" element={<WelcomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/logo" element={<LogoPlayground />} />
 
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/debts" element={<DebtsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/transactions" element={<TransactionsPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/debts" element={<DebtsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }
 

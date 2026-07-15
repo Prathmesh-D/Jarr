@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Card from '../components/ui/Card';
 import JarMascot from '../components/JarMascot';
 import { SkeletonListRow } from '../components/ui/Skeleton';
@@ -14,26 +15,20 @@ const FILTER_OPTIONS = ['ALL', 'INCOME', 'EXPENSE'];
 
 export default function TransactionsPage() {
   const { user } = useAuth();
-  const { refreshTrigger, triggerRefresh } = useTransactions();
-  const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { triggerRefresh } = useTransactions();
   const [filterType, setFilterType] = useState('ALL');
   const [undoTxId, setUndoTxId] = useState(null);
 
-  useEffect(() => { loadTransactions(); }, [refreshTrigger]);
+  const { data: pageData, isLoading: loading, refetch } = useQuery({
+    queryKey: ['transactions', 'history'],
+    queryFn: () => transactionService.getTransactions(0, 100)
+  });
 
-  const loadTransactions = async () => {
-    try {
-      setLoading(true);
-      const pageData = await transactionService.getTransactions(0, 100);
-      setTransactions(pageData.content || []);
-    } catch (err) {
-      console.error('Failed to load transactions', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    refetch();
+  }, [refreshTrigger, refetch]);
 
+  const transactions = pageData?.content || [];
   const filteredTransactions = transactions.filter(t => filterType === 'ALL' || t.type === filterType);
 
   const handleUndo = async (id) => {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import Card from '../components/ui/Card';
 import JarMascot from '../components/JarMascot';
 import { SkeletonCard } from '../components/ui/Skeleton';
@@ -13,8 +14,6 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 export default function DebtsPage() {
   const { user } = useAuth();
   const { refreshTrigger, triggerRefresh } = useTransactions();
-  const [debts, setDebts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'IOU';
   const [paymentDebt, setPaymentDebt] = useState(null);
@@ -24,19 +23,14 @@ export default function DebtsPage() {
 
   const setActiveTab = (tab) => setSearchParams({ tab });
 
-  useEffect(() => { loadDebts(); }, [refreshTrigger]);
+  const { data: debts = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['debts'],
+    queryFn: () => debtService.getDebts()
+  });
 
-  const loadDebts = async () => {
-    try {
-      setLoading(true);
-      const data = await debtService.getDebts();
-      setDebts(data);
-    } catch (err) {
-      console.error('Failed to load debts', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    refetch();
+  }, [refreshTrigger, refetch]);
 
   const handlePay = async (e) => {
     e.preventDefault();
