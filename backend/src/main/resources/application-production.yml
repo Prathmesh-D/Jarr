@@ -1,6 +1,9 @@
 # Production Profile — Koyeb + Aiven MySQL
 # All values are injected via environment variables on Koyeb
 
+server:
+  port: ${PORT:8080}
+
 spring:
   datasource:
     url: ${DB_URL}
