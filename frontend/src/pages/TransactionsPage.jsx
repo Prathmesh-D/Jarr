@@ -15,7 +15,7 @@ const FILTER_OPTIONS = ['ALL', 'INCOME', 'EXPENSE'];
 
 export default function TransactionsPage() {
   const { user } = useAuth();
-  const { triggerRefresh } = useTransactions();
+  const { refreshTrigger, triggerRefresh } = useTransactions();
   const [filterType, setFilterType] = useState('ALL');
   const [undoTxId, setUndoTxId] = useState(null);
 
