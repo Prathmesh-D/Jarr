@@ -48,6 +48,9 @@ public class Debt {
     @Builder.Default
     private BigDecimal amountPaid = BigDecimal.ZERO;
 
+    @Column(name = "source_transaction_id")
+    private Long sourceTransactionId;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

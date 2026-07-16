@@ -13,4 +13,8 @@ public interface DebtRepository extends JpaRepository<Debt, Long> {
     
     // For cron job to find debts due before a certain date (e.g., today + 3 days)
     List<Debt> findByIsSettledFalseAndDueDateLessThanEqual(LocalDate maxDueDate);
+
+    // For split-debt cleanup when editing a transaction
+    List<Debt> findBySourceTransactionId(Long sourceTransactionId);
+    void deleteBySourceTransactionId(Long sourceTransactionId);
 }

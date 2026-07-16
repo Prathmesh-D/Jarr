@@ -185,6 +185,13 @@ export default function SettingsPage() {
         </button>
       </div>
 
+      {/* Footer / Credits */}
+      <div className="pt-6 pb-2 flex flex-col items-center justify-center text-center">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-j-surface border border-j-border shadow-sm text-xs text-j-ink-3">
+          Made by <a href="https://github.com/Prathmesh-D" target="_blank" rel="noopener noreferrer" className="font-medium text-j-ink hover:text-j-accent transition-colors">Prathmesh Deshkar</a>
+        </div>
+      </div>
+
       <ConfirmDialog
         isOpen={showLogoutDialog}
         onClose={() => setShowLogoutDialog(false)}

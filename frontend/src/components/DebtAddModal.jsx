@@ -40,6 +40,15 @@ export default function DebtAddModal({ isOpen, onClose }) {
     }
   }, [isOpen, reset, defaultType]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const onSubmit = async (data) => {

@@ -64,7 +64,6 @@ export default function FriendManager() {
           </div>
           <div>
             <h2 className="text-lg font-heading font-bold text-j-ink">Friends List</h2>
-            <p className="text-sm text-j-ink-3">Manage people for quick Splitwise and Debt tracking.</p>
           </div>
         </div>
       </div>

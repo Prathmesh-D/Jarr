@@ -9,7 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/currency';
 import useLongPress from '../hooks/useLongPress';
 import { toast } from 'react-hot-toast';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Pencil, Trash2 } from 'lucide-react';
+import EditTransactionModal from '../components/EditTransactionModal';
 
 const FILTER_OPTIONS = ['ALL', 'INCOME', 'EXPENSE'];
 
@@ -17,7 +18,8 @@ export default function TransactionsPage() {
   const { user } = useAuth();
   const { refreshTrigger, triggerRefresh } = useTransactions();
   const [filterType, setFilterType] = useState('ALL');
-  const [undoTxId, setUndoTxId] = useState(null);
+  const [deletingTxId, setDeletingTxId] = useState(null);
+  const [editingTx, setEditingTx] = useState(null);
 
   const { data: pageData, isLoading: loading, refetch } = useQuery({
     queryKey: ['transactions', 'history'],
@@ -31,26 +33,42 @@ export default function TransactionsPage() {
   const transactions = pageData?.content || [];
   const filteredTransactions = transactions.filter(t => filterType === 'ALL' || t.type === filterType);
 
-  const handleUndo = async (id) => {
+  const handleDelete = async (id) => {
     try {
       await transactionService.deleteTransaction(id);
-      toast.success('Transaction removed');
-      setUndoTxId(null);
+      toast.success('Transaction deleted');
+      setDeletingTxId(null);
       triggerRefresh();
     } catch (err) {
-      toast.error('Failed to remove transaction');
+      toast.error('Failed to delete transaction');
     }
   };
 
   const TransactionItem = ({ tx }) => {
-    const isUndoActive = undoTxId === tx.id;
-    const longPressProps = useLongPress(() => setUndoTxId(tx.id), () => {
-      if (undoTxId && undoTxId !== tx.id) setUndoTxId(null);
-    });
+    const isDeleteActive = deletingTxId === tx.id;
+
+    const longPressProps = useLongPress(
+      () => setDeletingTxId(tx.id),        // long press → show delete
+      () => {
+        if (deletingTxId && deletingTxId !== tx.id) setDeletingTxId(null);
+      }
+    );
+
+    const handleTap = () => {
+      if (deletingTxId) {
+        setDeletingTxId(null);
+        return;
+      }
+      setEditingTx(tx);
+    };
 
     return (
-      <div {...(isUndoActive ? {} : longPressProps)} className="relative select-none">
-        <div className={`flex items-center justify-between py-3.5 border-b border-j-border last:border-0 transition-opacity duration-base ${isUndoActive ? 'opacity-20' : ''}`}>
+      <div className="relative select-none">
+        <div
+          {...(isDeleteActive ? {} : longPressProps)}
+          onClick={isDeleteActive ? undefined : handleTap}
+          className={`flex items-center justify-between py-3.5 border-b border-j-border last:border-0 transition-opacity duration-base cursor-pointer hover:bg-j-surface-raised ${isDeleteActive ? 'opacity-20 pointer-events-none' : ''}`}
+        >
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 ${tx.type === 'INCOME' ? 'bg-j-positive-dim' : 'bg-j-negative-dim'}`}>
               {tx.type === 'INCOME'
@@ -62,24 +80,29 @@ export default function TransactionsPage() {
               <p className="text-xs text-j-ink-4">{tx.note || new Date(tx.transactionDate).toLocaleDateString()}</p>
             </div>
           </div>
-          <span className={`shrink-0 whitespace-nowrap text-right text-sm font-semibold tabular-nums ${tx.type === 'INCOME' ? 'text-j-positive' : 'text-j-negative'}`}>
-            {tx.type === 'INCOME' ? '+' : '−'}{formatCurrency(tx.amount || 0, user?.currency)}
-          </span>
+          <div className="flex items-center gap-3">
+            <span className={`shrink-0 whitespace-nowrap text-right text-sm font-semibold tabular-nums ${tx.type === 'INCOME' ? 'text-j-positive' : 'text-j-negative'}`}>
+              {tx.type === 'INCOME' ? '+' : '−'}{formatCurrency(tx.amount || 0, user?.currency)}
+            </span>
+            <Pencil size={13} className="text-j-ink-4 shrink-0 opacity-0 group-hover:opacity-100" />
+          </div>
         </div>
 
-        {isUndoActive && (
+        {/* Long-press delete overlay */}
+        {isDeleteActive && (
           <div className="absolute inset-0 flex items-center justify-center gap-2">
             <button
-              onClick={(e) => { e.stopPropagation(); setUndoTxId(null); }}
+              onClick={(e) => { e.stopPropagation(); setDeletingTxId(null); }}
               className="px-3 py-1.5 bg-j-surface border border-j-border text-j-ink-3 text-sm rounded-sm hover:bg-j-surface-raised transition-colors duration-fast"
             >
               Cancel
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); handleUndo(tx.id); }}
-              className="px-4 py-1.5 bg-j-negative text-white text-sm font-medium rounded-sm hover:bg-[#751a1a] transition-colors duration-fast"
+              onClick={(e) => { e.stopPropagation(); handleDelete(tx.id); }}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-j-negative text-white text-sm font-medium rounded-sm hover:bg-[#751a1a] transition-colors duration-fast"
             >
-              Undo
+              <Trash2 size={13} />
+              Delete
             </button>
           </div>
         )}
@@ -130,6 +153,12 @@ export default function TransactionsPage() {
           ))}
         </Card>
       )}
+
+      <EditTransactionModal
+        isOpen={!!editingTx}
+        transaction={editingTx}
+        onClose={() => setEditingTx(null)}
+      />
     </div>
   );
 }

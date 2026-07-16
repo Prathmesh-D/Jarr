@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { X } from 'lucide-react';
 import Button from './ui/Button';
@@ -7,27 +8,88 @@ import { transactionService } from '../services/transactionService';
 import { useTransactions } from '../context/TransactionContext';
 import { useAuth } from '../context/AuthContext';
 import { getCurrencySymbol } from '../utils/currency';
+import toast from 'react-hot-toast';
 
-export default function QuickAddModal({ isOpen, onClose, onAdded }) {
+export default function EditTransactionModal({ isOpen, onClose, transaction }) {
   const { user } = useAuth();
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
-    defaultValues: {
-      type: 'EXPENSE',
-      amount: '',
-      categoryId: '1',
-      transactionDate: new Date().toISOString().split('T')[0],
-      note: ''
-    }
-  });
-
   const { triggerRefresh } = useTransactions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState({ EXPENSE: [], INCOME: [] });
   const [friendNames, setFriendNames] = useState([]);
+  const [splits, setSplits] = useState([]);
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm();
   const type = watch('type');
 
-  // Splitwise logic
-  const [splits, setSplits] = useState([]);
+  // Sort categories with Others pinned to bottom
+  const sortFn = (a, b) => {
+    const isAOther = a.name.toLowerCase() === 'others' || a.name.toLowerCase() === 'other';
+    const isBOther = b.name.toLowerCase() === 'others' || b.name.toLowerCase() === 'other';
+    if (isAOther && !isBOther) return 1;
+    if (!isAOther && isBOther) return -1;
+    return a.name.localeCompare(b.name);
+  };
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { categoryService } = await import('../services/categoryService');
+        const allCategories = await categoryService.getCategories();
+        setCategories({
+          EXPENSE: allCategories.filter(c => c.type === 'EXPENSE').sort(sortFn),
+          INCOME: allCategories.filter(c => c.type === 'INCOME').sort(sortFn),
+        });
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // When modal opens, pre-fill form from the transaction data
+  useEffect(() => {
+    if (isOpen && transaction) {
+      reset({
+        type: transaction.type,
+        amount: transaction.amount,
+        categoryId: String(transaction.categoryId),
+        transactionDate: transaction.transactionDate,
+        note: transaction.note || '',
+      });
+
+      // Pre-fill splits from the transaction response
+      if (transaction.splits && transaction.splits.length > 0) {
+        setSplits(transaction.splits.map(s => ({
+          personName: s.personName,
+          amount: String(s.amount),
+          splitType: s.splitType,
+        })));
+      } else {
+        setSplits([]);
+      }
+
+      // Fetch friends for autocomplete
+      const fetchFriends = async () => {
+        try {
+          const { friendService } = await import('../services/friendService');
+          const friends = await friendService.getFriends();
+          setFriendNames(friends.map(f => f.name));
+        } catch (e) {
+          console.error('Failed to fetch friends', e);
+        }
+      };
+      fetchFriends();
+    }
+  }, [isOpen, transaction, reset]);
+
+  // If type changes from EXPENSE to INCOME, clear splits with warning
+  useEffect(() => {
+    if (type === 'INCOME' && splits.length > 0) {
+      setSplits([]);
+      toast('Splits cleared — income transactions cannot be split.', { icon: 'ℹ️' });
+    }
+  }, [type]);
+
   const addSplit = () => setSplits([...splits, { personName: '', amount: '', splitType: 'UOME' }]);
   const updateSplit = (index, field, value) => {
     const newSplits = [...splits];
@@ -36,51 +98,9 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
   };
   const removeSplit = (index) => setSplits(splits.filter((_, i) => i !== index));
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const { categoryService } = await import('../services/categoryService');
-        const allCategories = await categoryService.getCategories();
-        const sortFn = (a, b) => {
-          const isAOther = a.name.toLowerCase() === 'others' || a.name.toLowerCase() === 'other';
-          const isBOther = b.name.toLowerCase() === 'others' || b.name.toLowerCase() === 'other';
-          if (isAOther && !isBOther) return 1;
-          if (!isAOther && isBOther) return -1;
-          return a.name.localeCompare(b.name);
-        };
-        
-        setCategories({
-          EXPENSE: allCategories.filter(c => c.type === 'EXPENSE').sort(sortFn),
-          INCOME:  allCategories.filter(c => c.type === 'INCOME').sort(sortFn),
-        });
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-      }
-    };
-    
-    fetchCategories();
-  }, []);
-
   const currentCategories = categories[type] || [];
 
-  useEffect(() => {
-    if (isOpen) {
-      reset();
-      setSplits([]);
-      
-      const fetchFriends = async () => {
-        try {
-          const { friendService } = await import('../services/friendService');
-          const friends = await friendService.getFriends();
-          setFriendNames(friends.map(f => f.name));
-        } catch (error) {
-          console.error('Failed to fetch friends', error);
-        }
-      };
-      fetchFriends();
-    }
-  }, [isOpen, reset]);
-
+  // Lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -90,16 +110,14 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
   const onSubmit = async (data) => {
     const amount = parseFloat(data.amount);
-    
+
     // Validate splits
     const validSplits = splits.map(s => ({
       personName: s.personName.trim(),
       amount: parseFloat(s.amount),
-      splitType: s.splitType
+      splitType: s.splitType,
     })).filter(s => s.personName && s.amount > 0);
 
     const totalSplitAmount = validSplits.reduce((sum, s) => sum + s.amount, 0);
@@ -110,25 +128,28 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
 
     setIsSubmitting(true);
     try {
-      await transactionService.createTransaction({
+      await transactionService.updateTransaction(transaction.id, {
         amount: amount,
         type: data.type,
         categoryId: parseInt(data.categoryId),
         transactionDate: data.transactionDate,
         note: data.note,
-        splits: validSplits
+        splits: validSplits,
       });
-      if (onAdded) onAdded();
+      toast.success('Transaction updated');
       triggerRefresh();
       onClose();
     } catch (error) {
-      console.error('Failed to add transaction', error);
+      console.error('Failed to update transaction', error);
+      toast.error('Failed to update transaction');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  return (
+  if (!isOpen || !transaction) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md p-4 sm:p-6 transition-all duration-500">
       <div className="modal-enter modal-enter-active bg-j-surface w-full max-w-md max-h-[90vh] rounded-xl sm:rounded-2xl shadow-modal border border-j-border relative overflow-hidden flex flex-col">
         {/* Decorative Glow */}
@@ -136,7 +157,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
 
         {/* Header */}
         <div className="flex justify-between items-center px-6 pt-6 pb-2 relative z-10">
-          <h2 className="text-2xl font-heading font-bold text-j-ink tracking-tight">Add Transaction</h2>
+          <h2 className="text-2xl font-heading font-bold text-j-ink tracking-tight">Edit Transaction</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-full bg-j-surface-raised border border-j-border text-j-ink-3 hover:text-j-ink hover:border-j-border-strong transition-all duration-fast shadow-sm"
@@ -146,13 +167,16 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-6 relative z-10 flex-1 overflow-y-auto">
-          {/* Type toggle (Pill design) */}
+          {/* Type toggle */}
           <div className="flex p-1 bg-j-surface-raised border border-j-border rounded-lg">
             {['EXPENSE', 'INCOME'].map(t => (
               <button
                 key={t}
                 type="button"
-                onClick={() => reset({ ...watch(), type: t, categoryId: t === 'EXPENSE' ? '1' : '9' })}
+                onClick={() => {
+                  setValue('type', t);
+                  setValue('categoryId', t === 'EXPENSE' ? String(categories.EXPENSE[0]?.id || '1') : String(categories.INCOME[0]?.id || '9'));
+                }}
                 className={`flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-fast
                   ${type === t
                     ? t === 'EXPENSE'
@@ -166,7 +190,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
             ))}
           </div>
 
-          {/* Massive Amount Input */}
+          {/* Amount */}
           <div className="flex flex-col items-center justify-center py-4">
             <label className="text-xs font-medium text-j-ink-4 uppercase tracking-widest mb-2">
               Amount ({getCurrencySymbol(user?.currency)})
@@ -186,6 +210,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
           </div>
 
           <div className="space-y-4">
+            {/* Category */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium text-j-ink-3 uppercase tracking-widest">Category</label>
               <select
@@ -198,6 +223,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
               </select>
             </div>
 
+            {/* Date & Note */}
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Date"
@@ -211,8 +237,8 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
                 {...register('note')}
               />
             </div>
-            
-            {/* Splitwise Feature */}
+
+            {/* Split Bill Section */}
             {type === 'EXPENSE' && (
               <div className="pt-4 border-t border-j-border">
                 <div className="flex items-center justify-between mb-3">
@@ -224,7 +250,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
                     + ADD PERSON
                   </button>
                 </div>
-                
+
                 <div className="space-y-3">
                   {splits.map((split, i) => (
                     <div key={i} className="flex flex-col gap-2 p-3 bg-j-surface-raised border border-j-border rounded-lg relative group">
@@ -233,7 +259,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
                       </button>
                       <input
                         type="text"
-                        list="quick-friend-names"
+                        list="edit-friend-names"
                         placeholder="Friend's Name"
                         value={split.personName}
                         onChange={(e) => updateSplit(i, 'personName', e.target.value)}
@@ -263,8 +289,8 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
                     </div>
                   ))}
                 </div>
-                
-                <datalist id="quick-friend-names">
+
+                <datalist id="edit-friend-names">
                   {friendNames.map(name => <option key={name} value={name} />)}
                 </datalist>
               </div>
@@ -273,11 +299,12 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
 
           <div className="pt-2">
             <Button type="submit" fullWidth size="lg" disabled={isSubmitting} className="h-12 text-base shadow-md">
-              {isSubmitting ? 'Saving...' : 'Save Transaction'}
+              {isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
