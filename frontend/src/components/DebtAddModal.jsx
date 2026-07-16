@@ -20,11 +20,23 @@ export default function DebtAddModal({ isOpen, onClose }) {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [friendNames, setFriendNames] = useState([]);
   const type = watch('type');
 
   useEffect(() => {
     if (isOpen) {
       reset({ type: defaultType, personName: '', amount: '', dueDate: '', note: '' });
+      
+      const fetchFriends = async () => {
+        try {
+          const { friendService } = await import('../services/friendService');
+          const friends = await friendService.getFriends();
+          setFriendNames(friends.map(f => f.name));
+        } catch (error) {
+          console.error('Failed to fetch friends', error);
+        }
+      };
+      fetchFriends();
     }
   }, [isOpen, reset, defaultType]);
 
@@ -51,7 +63,7 @@ export default function DebtAddModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md p-4 sm:p-6 transition-all duration-500">
-      <div className="modal-enter modal-enter-active bg-j-surface w-full max-w-md rounded-xl sm:rounded-2xl shadow-modal border border-j-border relative overflow-hidden flex flex-col">
+      <div className="modal-enter modal-enter-active bg-j-surface w-full max-w-md max-h-[90vh] rounded-xl sm:rounded-2xl shadow-modal border border-j-border relative overflow-hidden flex flex-col">
         {/* Decorative Glow */}
         <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-j-glow/20 to-transparent pointer-events-none" />
 
@@ -92,10 +104,7 @@ export default function DebtAddModal({ isOpen, onClose }) {
             <label className="text-xs font-medium text-j-ink-4 uppercase tracking-widest mb-2">
               Amount ({getCurrencySymbol(user?.currency)})
             </label>
-            <div className="relative flex items-center justify-center w-full">
-              <span className="text-4xl font-light text-j-ink-3 absolute left-1/2 -translate-x-[calc(50%+4rem)] pointer-events-none">
-                {getCurrencySymbol(user?.currency)}
-              </span>
+            <div className="relative flex items-center justify-center w-full px-4">
               <input
                 type="number"
                 step="0.01"
@@ -113,6 +122,7 @@ export default function DebtAddModal({ isOpen, onClose }) {
             <Input
               label="Person Name"
               placeholder="Who is this with?"
+              list="debt-friend-names"
               error={errors.personName?.message}
               {...register('personName', { required: 'Name is required' })}
             />
@@ -128,6 +138,10 @@ export default function DebtAddModal({ isOpen, onClose }) {
               {isSubmitting ? 'Saving...' : 'Save Debt'}
             </Button>
           </div>
+          
+          <datalist id="debt-friend-names">
+            {friendNames.map(name => <option key={name} value={name} />)}
+          </datalist>
         </form>
       </div>
     </div>

@@ -8,6 +8,7 @@ import com.jarr.debt.DebtRepository;
 import com.jarr.transaction.dto.TransactionRequest;
 import com.jarr.transaction.dto.TransactionResponse;
 import com.jarr.user.User;
+import com.jarr.friend.FriendService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
     private final DebtRepository debtRepository;
+    private final FriendService friendService;
 
     @Transactional
     public TransactionResponse createTransaction(User user, TransactionRequest request) {
@@ -42,6 +44,24 @@ public class TransactionService {
                 .build();
 
         Transaction savedTransaction = transactionRepository.save(transaction);
+
+        if (request.getSplits() != null && !request.getSplits().isEmpty()) {
+            for (com.jarr.transaction.dto.TransactionSplitRequest split : request.getSplits()) {
+                friendService.ensureFriendExists(user, split.getPersonName());
+                
+                Debt splitDebt = Debt.builder()
+                        .user(user)
+                        .type(com.jarr.debt.DebtType.valueOf(split.getSplitType()))
+                        .personName(split.getPersonName())
+                        .amount(split.getAmount())
+                        .amountPaid(java.math.BigDecimal.ZERO)
+                        .note("Split: " + (request.getNote() != null && !request.getNote().isBlank() ? request.getNote() : category.getName()))
+                        .isSettled(false)
+                        .build();
+                debtRepository.save(splitDebt);
+            }
+        }
+
         return mapToResponse(savedTransaction);
     }
 

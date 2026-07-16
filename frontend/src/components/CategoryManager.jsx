@@ -47,8 +47,16 @@ export default function CategoryManager() {
     setDeleteCategoryId(null);
   };
 
-  const expenseCategories = categories.filter(c => c.type === 'EXPENSE');
-  const incomeCategories = categories.filter(c => c.type === 'INCOME');
+  const sortFn = (a, b) => {
+    const isAOther = a.name.toLowerCase() === 'others' || a.name.toLowerCase() === 'other';
+    const isBOther = b.name.toLowerCase() === 'others' || b.name.toLowerCase() === 'other';
+    if (isAOther && !isBOther) return 1;
+    if (!isAOther && isBOther) return -1;
+    return a.name.localeCompare(b.name);
+  };
+
+  const expenseCategories = categories.filter(c => c.type === 'EXPENSE').sort(sortFn);
+  const incomeCategories = categories.filter(c => c.type === 'INCOME').sort(sortFn);
 
   return (
     <div className="bg-j-surface border border-j-border rounded-md">

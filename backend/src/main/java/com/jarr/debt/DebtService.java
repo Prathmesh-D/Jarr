@@ -10,6 +10,7 @@ import com.jarr.category.CategoryRepository;
 import com.jarr.common.TransactionType;
 import com.jarr.transaction.Transaction;
 import com.jarr.transaction.TransactionRepository;
+import com.jarr.friend.FriendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class DebtService {
     private final UserRepository userRepository;
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
+    private final FriendService friendService;
 
     @Transactional(readOnly = true)
     public List<DebtDto> getDebts(String email) {
@@ -41,6 +43,8 @@ public class DebtService {
     public DebtDto createDebt(String email, DebtRequest request) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        friendService.ensureFriendExists(user, request.getPersonName());
 
         Debt debt = Debt.builder()
                 .user(user)

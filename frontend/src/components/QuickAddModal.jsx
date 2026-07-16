@@ -23,28 +23,62 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
   const { triggerRefresh } = useTransactions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState({ EXPENSE: [], INCOME: [] });
+  const [friendNames, setFriendNames] = useState([]);
   const type = watch('type');
+
+  // Splitwise logic
+  const [splits, setSplits] = useState([]);
+  const addSplit = () => setSplits([...splits, { personName: '', amount: '', splitType: 'UOME' }]);
+  const updateSplit = (index, field, value) => {
+    const newSplits = [...splits];
+    newSplits[index][field] = value;
+    setSplits(newSplits);
+  };
+  const removeSplit = (index) => setSplits(splits.filter((_, i) => i !== index));
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const { categoryService } = await import('../services/categoryService');
         const allCategories = await categoryService.getCategories();
+        const sortFn = (a, b) => {
+          const isAOther = a.name.toLowerCase() === 'others' || a.name.toLowerCase() === 'other';
+          const isBOther = b.name.toLowerCase() === 'others' || b.name.toLowerCase() === 'other';
+          if (isAOther && !isBOther) return 1;
+          if (!isAOther && isBOther) return -1;
+          return a.name.localeCompare(b.name);
+        };
+        
         setCategories({
-          EXPENSE: allCategories.filter(c => c.type === 'EXPENSE'),
-          INCOME:  allCategories.filter(c => c.type === 'INCOME'),
+          EXPENSE: allCategories.filter(c => c.type === 'EXPENSE').sort(sortFn),
+          INCOME:  allCategories.filter(c => c.type === 'INCOME').sort(sortFn),
         });
       } catch (error) {
         console.error('Failed to fetch categories:', error);
       }
     };
+    
     fetchCategories();
   }, []);
 
   const currentCategories = categories[type] || [];
 
   useEffect(() => {
-    if (isOpen) reset();
+    if (isOpen) {
+      reset();
+      setSplits([]);
+      
+      const fetchFriends = async () => {
+        try {
+          const { friendService } = await import('../services/friendService');
+          const friends = await friendService.getFriends();
+          setFriendNames(friends.map(f => f.name));
+        } catch (error) {
+          console.error('Failed to fetch friends', error);
+        }
+      };
+      fetchFriends();
+    }
   }, [isOpen, reset]);
 
   if (!isOpen) return null;
@@ -57,7 +91,12 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
         type: data.type,
         categoryId: parseInt(data.categoryId),
         transactionDate: data.transactionDate,
-        note: data.note
+        note: data.note,
+        splits: splits.map(s => ({
+          personName: s.personName.trim(),
+          amount: parseFloat(s.amount),
+          splitType: s.splitType
+        })).filter(s => s.personName && s.amount > 0)
       });
       if (onAdded) onAdded();
       triggerRefresh();
@@ -71,7 +110,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-md p-4 sm:p-6 transition-all duration-500">
-      <div className="modal-enter modal-enter-active bg-j-surface w-full max-w-md rounded-xl sm:rounded-2xl shadow-modal border border-j-border relative overflow-hidden flex flex-col">
+      <div className="modal-enter modal-enter-active bg-j-surface w-full max-w-md max-h-[90vh] rounded-xl sm:rounded-2xl shadow-modal border border-j-border relative overflow-hidden flex flex-col">
         {/* Decorative Glow */}
         <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-j-glow/20 to-transparent pointer-events-none" />
 
@@ -112,10 +151,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
             <label className="text-xs font-medium text-j-ink-4 uppercase tracking-widest mb-2">
               Amount ({getCurrencySymbol(user?.currency)})
             </label>
-            <div className="relative flex items-center justify-center w-full">
-              <span className="text-4xl font-light text-j-ink-3 absolute left-1/2 -translate-x-[calc(50%+4rem)] pointer-events-none">
-                {getCurrencySymbol(user?.currency)}
-              </span>
+            <div className="relative flex items-center justify-center w-full px-4">
               <input
                 type="number"
                 step="0.01"
@@ -155,6 +191,64 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
                 {...register('note')}
               />
             </div>
+            
+            {/* Splitwise Feature */}
+            {type === 'EXPENSE' && (
+              <div className="pt-4 border-t border-j-border">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-medium text-j-ink-3 uppercase tracking-widest flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.872L3 3"/><path d="m15 9 6-6"/></svg>
+                    Split Bill
+                  </label>
+                  <button type="button" onClick={addSplit} className="text-[11px] font-semibold text-j-accent px-2 py-1 rounded hover:bg-j-accent/10 transition-colors duration-fast">
+                    + ADD PERSON
+                  </button>
+                </div>
+                
+                <div className="space-y-3">
+                  {splits.map((split, i) => (
+                    <div key={i} className="flex flex-col gap-2 p-3 bg-j-surface-raised border border-j-border rounded-lg relative group">
+                      <button type="button" onClick={() => removeSplit(i)} className="absolute -top-2 -right-2 w-6 h-6 bg-j-surface border border-j-border rounded-full flex items-center justify-center text-j-ink-4 hover:text-j-negative hover:border-j-negative transition-colors duration-fast z-10 shadow-sm opacity-0 group-hover:opacity-100">
+                        <X size={12} strokeWidth={3} />
+                      </button>
+                      <input
+                        type="text"
+                        list="quick-friend-names"
+                        placeholder="Friend's Name"
+                        value={split.personName}
+                        onChange={(e) => updateSplit(i, 'personName', e.target.value)}
+                        className="w-full bg-transparent text-sm font-medium text-j-ink placeholder:text-j-ink-4 border-b border-j-border/50 pb-1 focus:border-j-accent outline-none transition-colors duration-fast"
+                      />
+                      <div className="flex gap-2">
+                        <select
+                          value={split.splitType}
+                          onChange={(e) => updateSplit(i, 'splitType', e.target.value)}
+                          className="flex-1 bg-j-surface text-[13px] font-medium text-j-ink border border-j-border rounded-md px-2 py-1.5 outline-none focus:border-j-accent"
+                        >
+                          <option value="UOME">They owe me</option>
+                          <option value="IOU">I owe them</option>
+                        </select>
+                        <div className="relative flex-1">
+                          <span className="absolute left-2 top-1.5 text-[13px] font-medium text-j-ink-4">{getCurrencySymbol(user?.currency)}</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={split.amount}
+                            onChange={(e) => updateSplit(i, 'amount', e.target.value)}
+                            className="w-full bg-j-surface text-[13px] font-semibold tabular-nums text-j-ink border border-j-border rounded-md pl-6 pr-2 py-1.5 outline-none focus:border-j-accent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <datalist id="quick-friend-names">
+                  {friendNames.map(name => <option key={name} value={name} />)}
+                </datalist>
+              </div>
+            )}
           </div>
 
           <div className="pt-2">

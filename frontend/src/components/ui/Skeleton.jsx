@@ -91,7 +91,7 @@ export function AppLoader() {
             <div
               key={i}
               className="w-1.5 h-1.5 bg-white rounded-full opacity-40"
-              style={{ animation: `pulse 1.2s ${i * 0.2}s ease-in-out infinite alternate` }}
+              style={{ animation: `dot-pulse 1.2s ${i * 0.2}s ease-in-out infinite alternate` }}
             />
           ))}
         </div>
@@ -106,7 +106,7 @@ export function AppLoader() {
       </div>
 
       <style>{`
-        @keyframes pulse {
+        @keyframes dot-pulse {
           0%   { opacity: 0.25; transform: scale(0.8); }
           100% { opacity: 0.9;  transform: scale(1.2); }
         }

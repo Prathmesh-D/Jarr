@@ -32,4 +32,5 @@ public class TransactionRequest {
 
     private String note;
     private String paymentMethod;
+    private java.util.List<TransactionSplitRequest> splits;
 }

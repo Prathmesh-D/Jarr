@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { notificationService } from '../services/notificationService';
 import toast from 'react-hot-toast';
 import CategoryManager from '../components/CategoryManager';
+import FriendManager from '../components/FriendManager';
 import api from '../services/api';
 import { LogOut, Bell, Banknote, ChevronRight } from 'lucide-react';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
@@ -162,6 +163,12 @@ export default function SettingsPage() {
       <div>
         <p className="label-overline mb-2">Categories</p>
         <CategoryManager />
+      </div>
+
+      {/* Friends */}
+      <div>
+        <p className="label-overline mb-2">Friends</p>
+        <FriendManager />
       </div>
 
       {/* Logout */}
