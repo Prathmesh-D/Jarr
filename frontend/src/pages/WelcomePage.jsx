@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 import JarMascot from '../components/JarMascot';
@@ -8,8 +8,7 @@ export default function WelcomePage() {
   const { isAuthenticated } = useAuth();
 
   if (isAuthenticated) {
-    navigate('/dashboard', { replace: true });
-    return null;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (

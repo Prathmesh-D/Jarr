@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -26,9 +26,14 @@ const currencies = ['INR', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'];
 
 export default function SignUpPage() {
   const navigate = useNavigate();
-  const { register: registerUser, googleLogin } = useAuth();
+  const { register: registerUser, googleLogin, isAuthenticated } = useAuth();
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(signUpSchema),
@@ -36,7 +41,6 @@ export default function SignUpPage() {
   });
 
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const onSubmit = async (data) => {
     setServerError('');
