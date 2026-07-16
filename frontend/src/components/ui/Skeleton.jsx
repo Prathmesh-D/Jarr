@@ -44,11 +44,20 @@ export function SkeletonChartBlock({ className = '' }) {
 }
 
 import { createPortal } from 'react-dom';
+import { useState, useEffect } from 'react';
 
 /** Branded initial loading screen — shown on first app auth check */
 export function AppLoader() {
+  const [isWaking, setIsWaking] = useState(false);
+
+  useEffect(() => {
+    const handleWaking = () => setIsWaking(true);
+    window.addEventListener('server-waking-up', handleWaking);
+    return () => window.removeEventListener('server-waking-up', handleWaking);
+  }, []);
+
   return createPortal(
-    <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center gap-6 z-[999]">
+    <div className="fixed inset-0 bg-[#0A0A0A] flex flex-col items-center justify-center gap-6 z-[999] transition-colors duration-slow">
       {/* Minimal animated mark */}
       <svg width="40" height="48" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="8" y="2" width="24" height="4" rx="2" fill="white" opacity="0.9"/>
@@ -75,15 +84,27 @@ export function AppLoader() {
           opacity="0.15"
         />
       </svg>
-      <div className="flex gap-1.5">
-        {[0, 1, 2].map(i => (
-          <div
-            key={i}
-            className="w-1.5 h-1.5 bg-white rounded-full opacity-40"
-            style={{ animation: `pulse 1.2s ${i * 0.2}s ease-in-out infinite alternate` }}
-          />
-        ))}
+      
+      <div className="flex flex-col items-center gap-4">
+        <div className="flex gap-1.5">
+          {[0, 1, 2].map(i => (
+            <div
+              key={i}
+              className="w-1.5 h-1.5 bg-white rounded-full opacity-40"
+              style={{ animation: `pulse 1.2s ${i * 0.2}s ease-in-out infinite alternate` }}
+            />
+          ))}
+        </div>
+        {isWaking && (
+          <p className="text-sm font-medium text-white/70 animate-pulse mt-2 px-6 text-center">
+            Waking up the server...<br/>
+            <span className="text-xs text-white/40 font-normal mt-1 block">
+              This usually takes about 30 seconds on the free tier.
+            </span>
+          </p>
+        )}
       </div>
+
       <style>{`
         @keyframes pulse {
           0%   { opacity: 0.25; transform: scale(0.8); }

@@ -56,6 +56,24 @@ api.interceptors.response.use(
       }
     }
 
+    // If 502 Bad Gateway (Render sleeping) or CORS error (often masks 502), retry automatically
+    const isColdStartError = error.response?.status === 502 || (!error.response && error.message === 'Network Error');
+    
+    if (isColdStartError && !originalRequest._retryCount) {
+      originalRequest._retryCount = 0;
+    }
+
+    if (isColdStartError && originalRequest._retryCount < 15) {
+      originalRequest._retryCount += 1;
+      
+      // Dispatch event to UI so loaders can show "Waking up server..."
+      window.dispatchEvent(new CustomEvent('server-waking-up'));
+
+      // Wait 4 seconds before retrying
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      return api(originalRequest);
+    }
+
     return Promise.reject(error);
   }
 );
