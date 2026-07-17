@@ -25,7 +25,8 @@ export default function AppLayout() {
       if (sessionStorage.getItem('debtRemindersShown')) return;
       try {
         const debts = await debtService.getDebts() || [];
-        const unsettled = debts.filter(d => (!d.settled && !d.isSettled) && d.dueDate);
+        const safeDebts = Array.isArray(debts) ? debts : [];
+        const unsettled = safeDebts.filter(d => (!d?.settled && !d?.isSettled) && d?.dueDate);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         unsettled.forEach(debt => {
@@ -61,7 +62,7 @@ export default function AppLayout() {
       <div className="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-j-glow blur-[120px] rounded-full pointer-events-none z-0" />
 
       <div className="relative z-10">
-        <Sidebar />
+        <Sidebar onAddClick={handleFabClick} />
       </div>
 
       <main className="relative lg:ml-56 pb-32 lg:pb-10">

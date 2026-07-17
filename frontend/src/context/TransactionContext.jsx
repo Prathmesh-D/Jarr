@@ -17,7 +17,8 @@ export function TransactionProvider({ children }) {
     setLoading(true);
     try {
       const txRes = await transactionService.getTransactions(0, 5); // fetch 5 recent for dashboard
-      setTransactions(txRes.content || []);
+      const content = txRes?.content;
+      setTransactions(Array.isArray(content) ? content : []);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     } finally {

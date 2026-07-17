@@ -29,18 +29,17 @@ export default function SignUpPage() {
   const { register: registerUser, googleLogin, isAuthenticated } = useAuth();
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // All hooks must be declared before any conditional returns (Rules of Hooks)
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(signUpSchema),
     defaultValues: { currency: 'INR' },
   });
 
-  const [isSuccess, setIsSuccess] = useState(false);
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const onSubmit = async (data) => {
     setServerError('');
@@ -60,9 +59,6 @@ export default function SignUpPage() {
     setIsSubmitting(true);
     try {
       await googleLogin(credentialResponse.credential);
-      setIsRedirecting(true);
-      // Wait a moment then redirect to dashboard (since Google users are auto-verified)
-      setTimeout(() => navigate('/dashboard', { replace: true }), 800);
     } catch (err) {
       setServerError(err.response?.data?.message || 'Google signup failed.');
       setIsSubmitting(false);
@@ -77,7 +73,7 @@ export default function SignUpPage() {
     return (
       <div className="min-h-screen bg-j-bg flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden text-center">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-j-glow blur-[100px] rounded-full pointer-events-none" />
-        <JarMascot size={80} fillLevel={100} />
+        <JarMascot size={80} fillLevel={0.5} />
         <h1 className="text-2xl font-bold font-heading text-j-ink mt-6 mb-2">Check your email</h1>
         <p className="text-j-ink-3 mb-8 max-w-sm">
           We've sent a verification link to your email. Please click the link to activate your account.
@@ -94,7 +90,7 @@ export default function SignUpPage() {
       {/* Subtle Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-j-glow blur-[100px] rounded-full pointer-events-none" />
 
-      {(isSubmitting || isRedirecting) && <AppLoader />}
+      {isSubmitting && <AppLoader />}
 
       <button
         onClick={() => navigate(-1)}

@@ -21,24 +21,22 @@ export default function LoginPage() {
   const { login, googleLogin, isAuthenticated } = useAuth();
   const [serverError, setServerError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // All hooks must be declared before any conditional returns (Rules of Hooks)
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(loginSchema),
   });
 
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const onSubmit = async (data) => {
     setServerError('');
     setIsSubmitting(true);
     try {
       await login(data.email, data.password);
-      setIsRedirecting(true);
-      navigate('/dashboard', { replace: true });
     } catch (err) {
       setServerError(err.response?.data?.message || 'Invalid email or password.');
       setIsSubmitting(false);
@@ -50,8 +48,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await googleLogin(credentialResponse.credential);
-      setIsRedirecting(true);
-      navigate('/dashboard', { replace: true });
     } catch (err) {
       setServerError(err.response?.data?.message || 'Google login failed.');
       setIsSubmitting(false);
@@ -114,13 +110,23 @@ export default function LoginPage() {
             error={errors.email?.message}
             {...register('email')}
           />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            error={errors.password?.message}
-            {...register('password')}
-          />
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-medium text-j-ink-3 uppercase tracking-widest">Password</label>
+              <Link
+                to="/forgot-password"
+                className="text-xs text-j-ink-4 hover:text-j-accent transition-colors duration-fast"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <Input
+              type="password"
+              placeholder="••••••••"
+              error={errors.password?.message}
+              {...register('password')}
+            />
+          </div>
 
           {serverError && (
             <div className="text-sm text-j-negative bg-j-negative-dim border border-j-negative/20 rounded-sm px-3 py-2.5">
@@ -133,10 +139,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-j-border space-y-2 text-sm text-j-ink-3">
-          <Link to="/forgot-password" className="block hover:text-j-accent transition-colors duration-fast">
-            Forgot password?
-          </Link>
+        <div className="mt-6 pt-6 border-t border-j-border text-sm text-j-ink-3">
           <p>
             No account?{' '}
             <Link to="/signup" className="text-j-accent font-medium hover:underline">

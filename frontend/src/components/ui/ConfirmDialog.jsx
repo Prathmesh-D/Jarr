@@ -1,6 +1,7 @@
 import { AlertTriangle, LogOut, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import useBackButtonClose from '../../hooks/useBackButtonClose';
 
 export default function ConfirmDialog({
   isOpen,
@@ -14,6 +15,8 @@ export default function ConfirmDialog({
   icon = 'alert'
 }) {
   const [render, setRender] = useState(isOpen);
+
+  useBackButtonClose(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {

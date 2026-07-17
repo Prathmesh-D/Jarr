@@ -7,6 +7,9 @@ import { transactionService } from '../services/transactionService';
 import { useTransactions } from '../context/TransactionContext';
 import { useAuth } from '../context/AuthContext';
 import { getCurrencySymbol } from '../utils/currency';
+import useBackButtonClose from '../hooks/useBackButtonClose';
+import FriendNameInput from './ui/FriendNameInput';
+
 
 export default function QuickAddModal({ isOpen, onClose, onAdded }) {
   const { user } = useAuth();
@@ -20,6 +23,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
     }
   });
 
+  useBackButtonClose(isOpen, onClose);
   const { triggerRefresh } = useTransactions();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState({ EXPENSE: [], INCOME: [] });
@@ -49,9 +53,10 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
           return a.name.localeCompare(b.name);
         };
         
+        const safeCategories = Array.isArray(allCategories) ? allCategories : [];
         setCategories({
-          EXPENSE: allCategories.filter(c => c.type === 'EXPENSE').sort(sortFn),
-          INCOME:  allCategories.filter(c => c.type === 'INCOME').sort(sortFn),
+          EXPENSE: safeCategories.filter(c => c?.type === 'EXPENSE').sort(sortFn),
+          INCOME:  safeCategories.filter(c => c?.type === 'INCOME').sort(sortFn),
         });
       } catch (error) {
         console.error('Failed to fetch categories:', error);
@@ -231,12 +236,11 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
                       <button type="button" onClick={() => removeSplit(i)} className="absolute -top-2 -right-2 w-6 h-6 bg-j-surface border border-j-border rounded-full flex items-center justify-center text-j-ink-4 hover:text-j-negative hover:border-j-negative transition-colors duration-fast z-10 shadow-sm opacity-0 group-hover:opacity-100">
                         <X size={12} strokeWidth={3} />
                       </button>
-                      <input
-                        type="text"
-                        list="quick-friend-names"
-                        placeholder="Friend's Name"
+                      <FriendNameInput
                         value={split.personName}
-                        onChange={(e) => updateSplit(i, 'personName', e.target.value)}
+                        onChange={(val) => updateSplit(i, 'personName', val)}
+                        friendNames={friendNames}
+                        placeholder="Friend's Name"
                         className="w-full bg-transparent text-sm font-medium text-j-ink placeholder:text-j-ink-4 border-b border-j-border/50 pb-1 focus:border-j-accent outline-none transition-colors duration-fast"
                       />
                       <div className="flex gap-2">
@@ -264,9 +268,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
                   ))}
                 </div>
                 
-                <datalist id="quick-friend-names">
-                  {friendNames.map(name => <option key={name} value={name} />)}
-                </datalist>
+
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -64,6 +64,36 @@ function AppRoutes() {
 
 import React from 'react';
 
+/** Banner shown when a new SW version is waiting — auto-dismisses after user updates */
+function UpdateBanner() {
+  const [updateFn, setUpdateFn] = useState(null);
+
+  useEffect(() => {
+    const handler = (e) => setUpdateFn(() => e.detail.update);
+    window.addEventListener('sw-update-available', handler);
+    return () => window.removeEventListener('sw-update-available', handler);
+  }, []);
+
+  if (!updateFn) return null;
+
+  return (
+    <div className="fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-[200] w-[calc(100vw-2rem)] max-w-sm">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-j-ink text-j-bg rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.4)] border border-j-ink/20">
+        <div className="flex items-center gap-2.5">
+          <span className="text-sm">✦</span>
+          <p className="text-sm font-medium">Update available</p>
+        </div>
+        <button
+          onClick={updateFn}
+          className="shrink-0 px-3 py-1.5 text-xs font-bold bg-j-bg text-j-ink rounded-lg hover:opacity-90 active:scale-95 transition-all duration-fast"
+        >
+          Reload
+        </button>
+      </div>
+    </div>
+  );
+}
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -128,6 +158,7 @@ function App() {
                   }}
                 />
               </ErrorBoundary>
+              <UpdateBanner />
             </ThemeProvider>
           </TransactionProvider>
         </AuthProvider>

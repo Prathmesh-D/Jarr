@@ -49,8 +49,10 @@ export default function DashboardPage() {
     }
   };
 
-  const totalIou = debts.filter(d => d.type === 'IOU' && !d.settled && !d.isSettled).reduce((sum, d) => sum + (d.amount - (d.amountPaid || 0)), 0);
-  const totalUome = debts.filter(d => d.type === 'UOME' && !d.settled && !d.isSettled).reduce((sum, d) => sum + (d.amount - (d.amountPaid || 0)), 0);
+  // Defensive checks to ensure debts is an array before filtering
+  const safeDebts = Array.isArray(debts) ? debts : [];
+  const totalIou = safeDebts.filter(d => d.type === 'IOU' && !d.settled && !d.isSettled).reduce((sum, d) => sum + ((d?.amount || 0) - (d?.amountPaid || 0)), 0);
+  const totalUome = safeDebts.filter(d => d.type === 'UOME' && !d.settled && !d.isSettled).reduce((sum, d) => sum + ((d?.amount || 0) - (d?.amountPaid || 0)), 0);
 
   const totalIncome = report?.monthlySummary?.totalIncome || 0;
   const totalExpense = report?.monthlySummary?.totalExpense || 0;
@@ -180,7 +182,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Category donut chart */}
-          {report?.categoryBreakdown && report.categoryBreakdown.length > 0 && (
+          {Array.isArray(report?.categoryBreakdown) && report.categoryBreakdown.length > 0 && (
             <Card>
               <p className="text-xs text-j-ink-3 uppercase tracking-widest mb-4">By Category</p>
               <div className="h-40">
@@ -223,10 +225,10 @@ export default function DashboardPage() {
           {/* Recent transactions */}
           <div>
             <p className="text-xs text-j-ink-3 uppercase tracking-widest mb-3">Recent</p>
-            {transactions && transactions.length > 0 ? (
+            {Array.isArray(transactions) && transactions.length > 0 ? (
               <Card padding="px-4 py-0">
                 {transactions.slice(0, 8).map(tx => (
-                  <DashboardTransactionItem key={tx.id} tx={tx} />
+                  <DashboardTransactionItem key={tx?.id || Math.random()} tx={tx} />
                 ))}
               </Card>
             ) : (

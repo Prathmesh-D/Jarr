@@ -8,6 +8,7 @@ import { debtService } from '../services/debtService';
 import { useTransactions } from '../context/TransactionContext';
 import { useAuth } from '../context/AuthContext';
 import { getCurrencySymbol } from '../utils/currency';
+import useBackButtonClose from '../hooks/useBackButtonClose';
 
 export default function DebtAddModal({ isOpen, onClose }) {
   const { user } = useAuth();
@@ -22,6 +23,8 @@ export default function DebtAddModal({ isOpen, onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [friendNames, setFriendNames] = useState([]);
   const type = watch('type');
+
+  useBackButtonClose(isOpen, onClose);
 
   useEffect(() => {
     if (isOpen) {

@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { Home, List, BarChart3, Grid3X3, Handshake } from 'lucide-react';
+import { Home, List, BarChart3, Grid3X3, Handshake, Plus } from 'lucide-react';
 
 import JarMascot from './JarMascot';
 
 /**
  * Desktop sidebar — j-surface-raised bg, minimal monochrome nav links.
+ * onAddClick — opens the QuickAdd / DebtAdd modal depending on current page.
  */
 const navItems = [
   { to: '/dashboard',    icon: Home,      label: 'Home' },
@@ -14,7 +15,7 @@ const navItems = [
   { to: '/debts',        icon: Handshake, label: 'Debts' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onAddClick }) {
   return (
     <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-56 bg-j-surface-raised border-r border-j-border z-50">
       {/* Brand */}
@@ -27,8 +28,20 @@ export default function Sidebar() {
         </div>
       </div>
 
+      {/* Quick Add button */}
+      <div className="px-3 pt-4 pb-2">
+        <button
+          onClick={onAddClick}
+          className="w-full flex items-center justify-center gap-2 h-10 rounded-md bg-j-ink text-j-bg text-sm font-semibold hover:opacity-90 active:scale-[0.98] transition-all duration-fast shadow-sm"
+          aria-label="Quick add"
+        >
+          <Plus size={16} strokeWidth={2.5} />
+          Add Transaction
+        </button>
+      </div>
+
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-2 space-y-0.5">
         {navItems.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
@@ -58,3 +71,4 @@ export default function Sidebar() {
     </aside>
   );
 }
+
