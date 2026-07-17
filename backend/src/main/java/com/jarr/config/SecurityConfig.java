@@ -40,8 +40,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 // Swagger / OpenAPI
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                // Actuator health
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                // Actuator health & explicit ping
+                .requestMatchers("/actuator/health", "/actuator/info", "/api/v1/ping").permitAll()
                 // All other endpoints require authentication
                 .anyRequest().authenticated()
             )
