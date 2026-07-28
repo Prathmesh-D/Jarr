@@ -67,7 +67,7 @@ export default function TransactionsPage() {
         <div
           {...(isDeleteActive ? {} : longPressProps)}
           onClick={isDeleteActive ? undefined : handleTap}
-          className={`flex items-center justify-between py-3.5 border-b border-j-border last:border-0 transition-opacity duration-base cursor-pointer hover:bg-j-surface-raised ${isDeleteActive ? 'opacity-20 pointer-events-none' : ''}`}
+          className={`group flex items-center justify-between py-3.5 border-b border-j-border last:border-0 transition-opacity duration-base cursor-pointer hover:bg-j-surface-raised ${isDeleteActive ? 'opacity-20 pointer-events-none' : ''}`}
         >
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-sm flex items-center justify-center shrink-0 ${tx.type === 'INCOME' ? 'bg-j-positive-dim' : 'bg-j-negative-dim'}`}>
