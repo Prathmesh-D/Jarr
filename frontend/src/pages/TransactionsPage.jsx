@@ -57,9 +57,7 @@ export default function TransactionsPage() {
     const handleTap = () => {
       if (deletingTxId) {
         setDeletingTxId(null);
-        return;
       }
-      setEditingTx(tx);
     };
 
     return (
@@ -84,13 +82,23 @@ export default function TransactionsPage() {
             <span className={`shrink-0 whitespace-nowrap text-right text-sm font-semibold tabular-nums ${tx.type === 'INCOME' ? 'text-j-positive' : 'text-j-negative'}`}>
               {tx.type === 'INCOME' ? '+' : '−'}{formatCurrency(tx.amount || 0, user?.currency)}
             </span>
-            <Pencil size={13} className="text-j-ink-4 shrink-0 opacity-0 group-hover:opacity-100" />
           </div>
         </div>
 
-        {/* Long-press delete overlay */}
+        {/* Long-press action overlay */}
         {isDeleteActive && (
           <div className="absolute inset-0 flex items-center justify-center gap-2">
+            <button
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                setDeletingTxId(null); 
+                setEditingTx(tx); 
+              }}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-j-surface text-j-ink text-sm font-medium border border-j-border rounded-sm hover:bg-j-surface-raised transition-colors duration-fast"
+            >
+              <Pencil size={13} />
+              Edit
+            </button>
             <button
               onClick={(e) => { e.stopPropagation(); setDeletingTxId(null); }}
               className="px-3 py-1.5 bg-j-surface border border-j-border text-j-ink-3 text-sm rounded-sm hover:bg-j-surface-raised transition-colors duration-fast"
