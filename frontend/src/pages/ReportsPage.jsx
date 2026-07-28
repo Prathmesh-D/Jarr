@@ -14,6 +14,7 @@ export default function ReportsPage() {
   const { user } = useAuth();
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activePieIndex, setActivePieIndex] = useState(null);
   const currentDate = new Date();
   const [year, setYear] = useState(currentDate.getFullYear());
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
@@ -207,9 +208,17 @@ export default function ReportsPage() {
                       outerRadius="80%"
                       paddingAngle={3}
                       stroke="none"
+                      onClick={(_, index) => setActivePieIndex(activePieIndex === index ? null : index)}
+                      style={{ cursor: 'pointer', outline: 'none' }}
                     >
                       {report.categoryBreakdown.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_GRAYS[index % CHART_GRAYS.length]} stroke="none" />
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={CHART_GRAYS[index % CHART_GRAYS.length]} 
+                          stroke="none" 
+                          opacity={activePieIndex === null || activePieIndex === index ? 1 : 0.25}
+                          className="transition-opacity duration-300"
+                        />
                       ))}
                     </Pie>
                     <Tooltip
@@ -221,10 +230,18 @@ export default function ReportsPage() {
               </div>
               <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 mt-3 pt-3 border-t border-j-border">
                 {report.categoryBreakdown.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs">
+                  <div 
+                    key={idx} 
+                    className={`flex items-center gap-2 text-xs cursor-pointer select-none p-1 -m-1 rounded-sm transition-colors ${activePieIndex === idx ? 'bg-j-surface-raised' : 'hover:bg-j-surface-raised/50'}`}
+                    onClick={() => setActivePieIndex(activePieIndex === idx ? null : idx)}
+                  >
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CHART_GRAYS[idx % CHART_GRAYS.length] }} />
-                    <span className="flex-1 truncate text-j-ink-3">{item.categoryName}</span>
-                    <span className="font-medium text-j-ink-2">{item.percentage.toFixed(0)}%</span>
+                    <span className={`flex-1 truncate ${activePieIndex === idx ? 'font-medium text-j-ink' : 'text-j-ink-3'}`}>
+                      {item.categoryName}
+                    </span>
+                    <span className={`font-medium ${activePieIndex === idx ? 'text-j-ink' : 'text-j-ink-2'}`}>
+                      {activePieIndex === idx ? formatCurrency(item.amount, user?.currency) : `${item.percentage.toFixed(0)}%`}
+                    </span>
                   </div>
                 ))}
               </div>
