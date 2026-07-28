@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * useBackButtonClose — intercepts the Android hardware back button (and browser back)
@@ -16,6 +16,12 @@ import { useEffect } from 'react';
  * @param {function} onClose - callback to close the modal
  */
 export default function useBackButtonClose(isOpen, onClose) {
+  const onCloseRef = useRef(onClose);
+  
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -24,7 +30,7 @@ export default function useBackButtonClose(isOpen, onClose) {
 
     const handlePopState = () => {
       // Back button pressed — close the modal
-      onClose();
+      if (onCloseRef.current) onCloseRef.current();
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -39,5 +45,5 @@ export default function useBackButtonClose(isOpen, onClose) {
         history.back();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 }

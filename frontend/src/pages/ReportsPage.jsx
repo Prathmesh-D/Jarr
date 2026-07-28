@@ -19,6 +19,13 @@ export default function ReportsPage() {
   const [year, setYear] = useState(currentDate.getFullYear());
   const [month, setMonth] = useState(currentDate.getMonth() + 1);
 
+  // Click away to dismiss pie chart highlight
+  useEffect(() => {
+    const handleGlobalClick = () => setActivePieIndex(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
+  }, []);
+
   useEffect(() => { loadReport(); }, [year, month]);
 
   const loadReport = async () => {
@@ -208,7 +215,10 @@ export default function ReportsPage() {
                       outerRadius="80%"
                       paddingAngle={3}
                       stroke="none"
-                      onClick={(_, index) => setActivePieIndex(activePieIndex === index ? null : index)}
+                      onClick={(_, index, e) => {
+                        if (e && e.stopPropagation) e.stopPropagation();
+                        setActivePieIndex(activePieIndex === index ? null : index);
+                      }}
                       style={{ cursor: 'pointer', outline: 'none' }}
                     >
                       {report.categoryBreakdown.map((_, index) => (
@@ -233,7 +243,10 @@ export default function ReportsPage() {
                   <div 
                     key={idx} 
                     className={`flex items-center gap-2 text-xs cursor-pointer select-none p-1 -m-1 rounded-sm transition-colors ${activePieIndex === idx ? 'bg-j-surface-raised' : 'hover:bg-j-surface-raised/50'}`}
-                    onClick={() => setActivePieIndex(activePieIndex === idx ? null : idx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActivePieIndex(activePieIndex === idx ? null : idx);
+                    }}
                   >
                     <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CHART_GRAYS[idx % CHART_GRAYS.length] }} />
                     <span className={`flex-1 truncate ${activePieIndex === idx ? 'font-medium text-j-ink' : 'text-j-ink-3'}`}>
