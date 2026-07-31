@@ -44,10 +44,17 @@ public class ReportService {
         BigDecimal totalExpense = calculateTotal(transactions, TransactionType.EXPENSE);
         BigDecimal netSavings = totalIncome.subtract(totalExpense);
 
+        BigDecimal allTimeIncome = transactionRepository.sumAmountByUserAndType(user, TransactionType.INCOME);
+        BigDecimal allTimeExpense = transactionRepository.sumAmountByUserAndType(user, TransactionType.EXPENSE);
+        if (allTimeIncome == null) allTimeIncome = BigDecimal.ZERO;
+        if (allTimeExpense == null) allTimeExpense = BigDecimal.ZERO;
+        BigDecimal allTimeNetBalance = allTimeIncome.subtract(allTimeExpense);
+
         MonthlySummaryDto summary = MonthlySummaryDto.builder()
                 .totalIncome(totalIncome)
                 .totalExpense(totalExpense)
                 .netSavings(netSavings)
+                .allTimeNetBalance(allTimeNetBalance)
                 .build();
 
         List<Transaction> expenses = transactions.stream()

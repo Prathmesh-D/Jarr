@@ -25,6 +25,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             @Param("user") User user, 
             @Param("type") TransactionType type, 
             @Param("startDate") LocalDate startDate, 
-            @Param("endDate") LocalDate endDate
-    );
+            @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT SUM(t.amount) FROM Transaction t WHERE t.user = :user AND t.type = :type")
+    java.math.BigDecimal sumAmountByUserAndType(@Param("user") User user, @Param("type") TransactionType type);
 }

@@ -11,8 +11,10 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { formatCurrency } from '../utils/currency';
 import useLongPress from '../hooks/useLongPress';
 import { toast } from 'react-hot-toast';
-import { ArrowUpRight, ArrowDownRight, TrendingUp } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, PiggyBank } from 'lucide-react';
 import JarMascot from '../components/JarMascot';
+import { useQuery } from '@tanstack/react-query';
+import { vaultService } from '../services/vaultService';
 
 // Muted grayscale palette for donut chart — no bright colors
 const CHART_GRAYS = ['#3A3A3A', '#787876', '#B0B0AE', '#C8C8C7', '#E4E4E3', '#0A0A0A', '#5A5A58'];
@@ -65,7 +67,8 @@ export default function DashboardPage() {
   const totalIncome = report?.monthlySummary?.totalIncome || 0;
   const totalExpense = report?.monthlySummary?.totalExpense || 0;
   const netSavings = report?.monthlySummary?.netSavings || 0;
-  const isPositive = netSavings >= 0;
+  const allTimeNetBalance = report?.monthlySummary?.allTimeNetBalance || 0;
+  const isPositive = allTimeNetBalance >= 0;
 
   const handleUndo = async (id) => {
     try {
@@ -149,10 +152,10 @@ export default function DashboardPage() {
         <>
           {/* Net savings hero */}
           <Card className="p-5">
-            <p className="text-xs text-j-ink-3 uppercase tracking-widest mb-3">Net this month</p>
+            <p className="text-xs text-j-ink-3 uppercase tracking-widest mb-3">Current Balance</p>
             <div className="flex items-baseline gap-2">
               <span className={`text-[32px] font-semibold tabular-nums leading-none ${isPositive ? 'text-j-ink' : 'text-j-negative'}`}>
-                {formatCurrency(netSavings, user?.currency)}
+                {formatCurrency(allTimeNetBalance, user?.currency)}
               </span>
               <TrendingUp size={16} className={isPositive ? 'text-j-positive' : 'text-j-negative'} />
             </div>
@@ -188,6 +191,9 @@ export default function DashboardPage() {
               <p className="text-xs text-j-ink-4 mt-1">Owed to you</p>
             </Card>
           </div>
+
+          {/* Vault shortcut card — mobile only (desktop uses sidebar) */}
+          <VaultShortcutCard navigate={navigate} currency={user?.currency} />
 
           {/* Category donut chart */}
           {Array.isArray(report?.categoryBreakdown) && report.categoryBreakdown.length > 0 && (
@@ -272,6 +278,41 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/** Small vault tease card shown on Dashboard for mobile access */
+function VaultShortcutCard({ navigate, currency }) {
+  const { data: vaults = [] } = useQuery({
+    queryKey: ['vaults'],
+    queryFn: vaultService.getVaults,
+    staleTime: 60 * 1000,
+  });
+
+  const totalSavings = vaults.reduce((sum, v) => sum + Number(v.currentBalance || 0), 0);
+
+  return (
+    <div
+      onClick={() => navigate('/vault')}
+      className="group flex items-center justify-between bg-j-surface border border-j-border rounded-xl p-4 cursor-pointer active:scale-[0.98] hover:border-j-border-raised transition-all duration-200"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-j-surface-raised border border-j-border flex items-center justify-center">
+          <PiggyBank size={18} className="text-j-ink-3" />
+        </div>
+        <div>
+          <p className="text-xs text-j-ink-4 uppercase tracking-widest">Vault</p>
+          <p className="text-sm font-semibold text-j-ink tabular-nums">
+            {vaults.length === 0
+              ? 'No vaults yet'
+              : formatCurrency(totalSavings, currency)}
+          </p>
+        </div>
+      </div>
+      <div className="text-j-ink-4 group-hover:text-j-ink transition-colors">
+        <ArrowUpRight size={18} />
+      </div>
     </div>
   );
 }

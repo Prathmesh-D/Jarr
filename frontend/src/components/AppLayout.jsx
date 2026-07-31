@@ -68,7 +68,7 @@ export default function AppLayout() {
       <main className="relative lg:ml-56 pb-32 lg:pb-10">
         {/* Top Action Bar */}
         <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between px-4 pt-4 pb-2 lg:pt-5 pointer-events-none">
-          {location.pathname === '/settings' ? (
+          {location.pathname === '/settings' || location.pathname === '/vault' ? (
             <button
               onClick={() => window.history.back()}
               className="pointer-events-auto w-9 h-9 rounded-sm bg-j-surface border border-j-border flex items-center justify-center text-j-ink-3 hover:text-j-ink hover:border-j-border-strong transition-[border-color,color] duration-fast ease-smooth shadow-card"

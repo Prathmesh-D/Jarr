@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, List, BarChart3, Grid3X3, Handshake, Plus } from 'lucide-react';
+import { Home, List, BarChart3, Grid3X3, Handshake, Plus, PiggyBank } from 'lucide-react';
 
 import JarMascot from './JarMascot';
 
@@ -13,6 +13,7 @@ const navItems = [
   { to: '/reports',      icon: BarChart3, label: 'Reports' },
   { to: '/categories',   icon: Grid3X3,   label: 'Categories' },
   { to: '/debts',        icon: Handshake, label: 'Debts' },
+  { to: '/vault',        icon: PiggyBank, label: 'Vault' },
 ];
 
 export default function Sidebar({ onAddClick }) {

@@ -14,5 +14,6 @@ import java.math.BigDecimal;
 public class MonthlySummaryDto {
     private BigDecimal totalIncome;
     private BigDecimal totalExpense;
-    private BigDecimal netSavings;
+    private BigDecimal netSavings; // Current month's net
+    private BigDecimal allTimeNetBalance; // Overall account balance
 }

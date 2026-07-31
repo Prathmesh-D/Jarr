@@ -14,6 +14,7 @@ import DashboardPage from './pages/DashboardPage';
 import TransactionsPage from './pages/TransactionsPage';
 import ReportsPage from './pages/ReportsPage';
 import DebtsPage from './pages/DebtsPage';
+import VaultPage from './pages/VaultPage';
 
 // Lazy loaded pages for performance optimization
 const WelcomePage = lazy(() => import('./pages/WelcomePage'));
@@ -52,6 +53,7 @@ function AppRoutes() {
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/debts" element={<DebtsPage />} />
+            <Route path="/vault" element={<VaultPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>

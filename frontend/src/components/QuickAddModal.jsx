@@ -13,12 +13,18 @@ import FriendNameInput from './ui/FriendNameInput';
 
 export default function QuickAddModal({ isOpen, onClose, onAdded }) {
   const { user } = useAuth();
+  const getLocalYMD = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().split('T')[0];
+  };
+
   const { register, handleSubmit, reset, watch, formState: { errors } } = useForm({
     defaultValues: {
       type: 'EXPENSE',
       amount: '',
       categoryId: '1',
-      transactionDate: new Date().toISOString().split('T')[0],
+      transactionDate: getLocalYMD(),
       note: ''
     }
   });
@@ -91,9 +97,11 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      reset(); // ensure form is promptly cleared on close
+      setSplits([]);
     }
     return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+  }, [isOpen, reset]);
 
   if (!isOpen) return null;
 
@@ -125,6 +133,7 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
       });
       if (onAdded) onAdded();
       triggerRefresh();
+      reset();
       onClose();
     } catch (error) {
       console.error('Failed to add transaction', error);
