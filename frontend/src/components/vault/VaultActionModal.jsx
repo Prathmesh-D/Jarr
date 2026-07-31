@@ -11,15 +11,6 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
   useBackButtonClose(isOpen, onClose);
   const [mode, setMode] = useState(initialMode || 'deposit'); // 'deposit' | 'withdraw' | 'transfer'
 
-  useEffect(() => {
-    if (initialMode && isOpen) {
-      setMode(initialMode);
-    }
-    if (!isOpen) {
-      reset();
-    }
-  }, [initialMode, isOpen, reset]);
-  const [submitting, setSubmitting] = useState(false);
   const getLocalYMD = () => {
     const d = new Date();
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
@@ -29,6 +20,17 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     defaultValues: { amount: '', note: '', entryDate: getLocalYMD(), toVaultId: '', sourceId: '' }
   });
+
+  useEffect(() => {
+    if (initialMode && isOpen) {
+      setMode(initialMode);
+    }
+    if (!isOpen) {
+      reset();
+    }
+  }, [initialMode, isOpen, reset]);
+
+  const [submitting, setSubmitting] = useState(false);
 
   const otherVaults = (allVaults || []).filter(v => v.id !== vault?.id);
 
