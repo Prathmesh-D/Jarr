@@ -4,11 +4,13 @@ import { X } from 'lucide-react';
 import Button from './ui/Button';
 import Input from './ui/Input';
 import { transactionService } from '../services/transactionService';
+import { reportService } from '../services/reportService';
 import { useTransactions } from '../context/TransactionContext';
 import { useAuth } from '../context/AuthContext';
 import { getCurrencySymbol } from '../utils/currency';
 import useBackButtonClose from '../hooks/useBackButtonClose';
 import FriendNameInput from './ui/FriendNameInput';
+import ConfirmDialog from './ui/ConfirmDialog';
 
 
 export default function QuickAddModal({ isOpen, onClose, onAdded }) {
@@ -34,17 +36,62 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState({ EXPENSE: [], INCOME: [] });
   const [friendNames, setFriendNames] = useState([]);
+  const [pendingTxData, setPendingTxData] = useState(null);
+  const [showInsufficientDialog, setShowInsufficientDialog] = useState(false);
   const type = watch('type');
 
   // Splitwise logic
   const [splits, setSplits] = useState([]);
-  const addSplit = () => setSplits([...splits, { personName: '', amount: '', splitType: 'UOME' }]);
-  const updateSplit = (index, field, value) => {
-    const newSplits = [...splits];
-    newSplits[index][field] = value;
-    setSplits(newSplits);
+  const amountVal = watch('amount');
+
+  const recalculateSplits = (currentSplits, totalAmt) => {
+    const total = parseFloat(totalAmt) || 0;
+    if (total <= 0) return currentSplits;
+
+    let manualSum = 0;
+    let autoCount = 1; // 1 for the user
+
+    currentSplits.forEach(s => {
+      if (s.isManual) {
+        manualSum += (parseFloat(s.amount) || 0);
+      } else {
+        autoCount++;
+      }
+    });
+
+    const remaining = Math.max(0, total - manualSum);
+    const autoAmount = autoCount > 0 ? (remaining / autoCount).toFixed(2) : "0.00";
+
+    return currentSplits.map(s => {
+      if (s.isManual) return s;
+      return { ...s, amount: autoAmount };
+    });
   };
-  const removeSplit = (index) => setSplits(splits.filter((_, i) => i !== index));
+
+  const addSplit = () => {
+    setSplits(prev => recalculateSplits([...prev, { personName: '', amount: '', splitType: 'UOME', isManual: false }], amountVal));
+  };
+  const updateSplit = (index, field, value) => {
+    setSplits(prev => {
+      const newSplits = [...prev];
+      newSplits[index] = { ...newSplits[index], [field]: value };
+      if (field === 'amount') {
+        newSplits[index].isManual = true;
+        return recalculateSplits(newSplits, amountVal);
+      }
+      return newSplits;
+    });
+  };
+  const removeSplit = (index) => {
+    setSplits(prev => recalculateSplits(prev.filter((_, i) => i !== index), amountVal));
+  };
+
+  useEffect(() => {
+    if (splits.length > 0) {
+      setSplits(prev => recalculateSplits(prev, amountVal));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amountVal]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -121,6 +168,37 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
       return;
     }
 
+    // Check if expense takes balance below zero
+    if (data.type === 'EXPENSE' && !pendingTxData) {
+      setIsSubmitting(true);
+      try {
+        const currentDate = new Date();
+        const report = await reportService.getReport(currentDate.getFullYear(), currentDate.getMonth() + 1);
+        const currentBalance = report?.monthlySummary?.allTimeNetBalance || 0;
+        
+        if (currentBalance - amount < 0) {
+          setIsSubmitting(false);
+          setPendingTxData(data);
+          setShowInsufficientDialog(true);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to verify balance', err);
+      }
+      setIsSubmitting(false);
+    }
+
+    await executeSubmit(data);
+  };
+
+  const executeSubmit = async (data) => {
+    const amount = parseFloat(data.amount);
+    const validSplits = splits.map(s => ({
+      personName: s.personName.trim(),
+      amount: parseFloat(s.amount),
+      splitType: s.splitType
+    })).filter(s => s.personName && s.amount > 0);
+
     setIsSubmitting(true);
     try {
       await transactionService.createTransaction({
@@ -134,11 +212,13 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
       if (onAdded) onAdded();
       triggerRefresh();
       reset();
+      setPendingTxData(null);
       onClose();
     } catch (error) {
       console.error('Failed to add transaction', error);
     } finally {
       setIsSubmitting(false);
+      setShowInsufficientDialog(false);
     }
   };
 
@@ -289,6 +369,19 @@ export default function QuickAddModal({ isOpen, onClose, onAdded }) {
           </div>
         </form>
       </div>
+
+      <ConfirmDialog
+        isOpen={showInsufficientDialog}
+        onClose={() => {
+          setShowInsufficientDialog(false);
+          setPendingTxData(null);
+        }}
+        title="Insufficient Balance"
+        message="Your balance cannot go below zero. Please adjust the transaction amount or add income first."
+        isAlert={true}
+        icon="alert"
+        isDestructive={true}
+      />
     </div>
   );
 }

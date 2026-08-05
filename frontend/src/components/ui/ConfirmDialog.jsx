@@ -12,7 +12,8 @@ export default function ConfirmDialog({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   isDestructive = true,
-  icon = 'alert'
+  icon = 'alert',
+  isAlert = false
 }) {
   const [render, setRender] = useState(isOpen);
 
@@ -61,28 +62,23 @@ export default function ConfirmDialog({
           <h2 className="text-lg font-semibold text-j-ink tracking-tight mb-2">{title}</h2>
           <p className="text-sm text-j-ink-3 leading-relaxed">{message}</p>
         </div>
-        
-        <div className="p-4 pt-0 flex gap-2">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 bg-j-surface border border-j-border text-j-ink-3 text-sm font-semibold rounded-md hover:bg-j-surface-raised transition-colors duration-fast active:scale-[0.98]"
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-            className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-md transition-colors duration-fast active:scale-[0.98] ${
-              isDestructive 
-                ? 'bg-j-negative text-white hover:bg-j-negative-dim' 
-                : 'bg-j-ink text-j-bg hover:bg-j-ink-2'
-            }`}
-          >
-            {confirmText}
-          </button>
-        </div>
+                <div className="p-4 pt-0 flex gap-2">
+                {!isAlert && (
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 py-2.5 text-sm font-semibold text-j-ink-3 border border-j-border rounded-md hover:bg-j-surface-raised transition-colors duration-fast active:scale-[0.98]"
+                  >
+                    {cancelText}
+                  </button>
+                )}
+                <button
+                  onClick={isAlert ? onClose : () => { onConfirm(); onClose(); }}
+                  className={`flex-1 py-2.5 text-sm font-semibold text-white rounded-md transition-colors duration-fast active:scale-[0.98] ${isDestructive ? 'bg-j-negative hover:bg-j-negative-dim' : 'bg-j-ink hover:bg-j-ink-2'}`}
+                >
+                  {isAlert ? 'OK' : confirmText}
+                </button>
+              </div>
       </div>
     </div>,
     document.body

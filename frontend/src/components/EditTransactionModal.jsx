@@ -11,6 +11,7 @@ import { getCurrencySymbol } from '../utils/currency';
 import toast from 'react-hot-toast';
 import useBackButtonClose from '../hooks/useBackButtonClose';
 import FriendNameInput from './ui/FriendNameInput';
+import { checkSufficientBalance } from '../utils/balanceCheck';
 
 export default function EditTransactionModal({ isOpen, onClose, transaction }) {
   const { user } = useAuth();
@@ -21,7 +22,40 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }) {
   const [splits, setSplits] = useState([]);
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm();
+  
   const type = watch('type');
+  const amountVal = watch('amount');
+
+  const recalculateSplits = (currentSplits, totalAmt) => {
+    const total = parseFloat(totalAmt) || 0;
+    if (total <= 0) return currentSplits;
+
+    let manualSum = 0;
+    let autoCount = 1; // 1 for the user
+
+    currentSplits.forEach(s => {
+      if (s.isManual) {
+        manualSum += (parseFloat(s.amount) || 0);
+      } else {
+        autoCount++;
+      }
+    });
+
+    const remaining = Math.max(0, total - manualSum);
+    const autoAmount = autoCount > 0 ? (remaining / autoCount).toFixed(2) : "0.00";
+
+    return currentSplits.map(s => {
+      if (s.isManual) return s;
+      return { ...s, amount: autoAmount };
+    });
+  };
+
+  useEffect(() => {
+    if (splits.length > 0) {
+      setSplits(prev => recalculateSplits(prev, amountVal));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [amountVal]);
 
   useBackButtonClose(isOpen, onClose);
 
@@ -94,13 +128,25 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }) {
     }
   }, [type]);
 
-  const addSplit = () => setSplits([...splits, { personName: '', amount: '', splitType: 'UOME' }]);
-  const updateSplit = (index, field, value) => {
-    const newSplits = [...splits];
-    newSplits[index][field] = value;
-    setSplits(newSplits);
+  const addSplit = () => {
+    setSplits(prev => recalculateSplits([...prev, { personName: '', amount: '', splitType: 'UOME', isManual: false }], amountVal));
   };
-  const removeSplit = (index) => setSplits(splits.filter((_, i) => i !== index));
+
+  const updateSplit = (index, field, value) => {
+    setSplits(prev => {
+      const newSplits = [...prev];
+      newSplits[index] = { ...newSplits[index], [field]: value };
+      if (field === 'amount') {
+        newSplits[index].isManual = true;
+        return recalculateSplits(newSplits, amountVal);
+      }
+      return newSplits;
+    });
+  };
+
+  const removeSplit = (index) => {
+    setSplits(prev => recalculateSplits(prev.filter((_, i) => i !== index), amountVal));
+  };
 
   const currentCategories = categories[type] || [];
 
@@ -128,6 +174,16 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }) {
     if (totalSplitAmount > amount) {
       toast.error(`Total split amount (${getCurrencySymbol(user?.currency)}${totalSplitAmount}) cannot exceed transaction amount (${getCurrencySymbol(user?.currency)}${amount})`);
       return;
+    }
+
+    let oldBalanceEffect = transaction.type === 'INCOME' ? transaction.amount : -transaction.amount;
+    let newBalanceEffect = data.type === 'INCOME' ? amount : -amount;
+    let balanceDelta = newBalanceEffect - oldBalanceEffect;
+    
+    if (balanceDelta < 0) {
+      const amountToDeduct = Math.abs(balanceDelta);
+      const hasSufficient = await checkSufficientBalance(amountToDeduct);
+      if (!hasSufficient) return;
     }
 
     setIsSubmitting(true);

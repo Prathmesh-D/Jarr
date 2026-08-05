@@ -38,6 +38,9 @@ export default function FriendNameInput({ value, onChange, friendNames = [], pla
   const handleSelect = (name) => {
     onChange(name);
     setIsOpen(false);
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
   };
 
   const showDropdown = isOpen && friendNames.length > 0 && filtered.length > 0;

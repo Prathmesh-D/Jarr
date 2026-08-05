@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import useBackButtonClose from '../../hooks/useBackButtonClose';
 import { VAULT_ICONS } from './CreateVaultModal';
+import { checkSufficientBalance } from '../../utils/balanceCheck';
 
 export default function VaultActionModal({ isOpen, initialMode, onClose, vault, allVaults, onDeposit, onWithdraw, onTransfer }) {
   useBackButtonClose(isOpen, onClose);
@@ -43,6 +44,10 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
         entryDate: data.entryDate,
       };
       if (mode === 'deposit') {
+        if (data.sourceId === 'main') {
+          const hasSufficient = await checkSufficientBalance(payload.amount);
+          if (!hasSufficient) return;
+        }
         await onDeposit({ ...payload, sourceId: data.sourceId });
       } else if (mode === 'withdraw') {
         if (!data.toVaultId) {

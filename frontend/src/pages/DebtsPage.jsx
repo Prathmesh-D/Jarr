@@ -11,12 +11,15 @@ import { formatCurrency, getCurrencySymbol } from '../utils/currency';
 import { ChevronDown } from 'lucide-react';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 
+import { checkSufficientBalance } from '../utils/balanceCheck';
+
 export default function DebtsPage() {
   const { user } = useAuth();
   const { refreshTrigger, triggerRefresh } = useTransactions();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'IOU';
   const [paymentDebt, setPaymentDebt] = useState(null);
+  const [paymentGroup, setPaymentGroup] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [deleteDialogId, setDeleteDialogId] = useState(null);
   const [doneDialogId, setDoneDialogId] = useState(null);
@@ -34,10 +37,54 @@ export default function DebtsPage() {
 
   const handlePay = async (e) => {
     e.preventDefault();
-    if (!paymentDebt || !paymentAmount) return;
+    if (!paymentAmount) return;
+    
+    let isExpense = false;
+    if (paymentDebt && paymentDebt.type === 'IOU') {
+       isExpense = true;
+    } else if (paymentGroup && activeTab === 'IOU') {
+       isExpense = true;
+    }
+
+    if (isExpense) {
+       const hasSufficient = await checkSufficientBalance(parseFloat(paymentAmount));
+       if (!hasSufficient) return;
+    }
+
     try {
-      await debtService.payDebt(paymentDebt.id, parseFloat(paymentAmount));
+      if (paymentDebt) {
+        await debtService.payDebt(paymentDebt.id, parseFloat(paymentAmount));
+      } else if (paymentGroup) {
+        let remainingToPay = parseFloat(paymentAmount);
+        const targetType = activeTab; // The net balance type
+        
+        // 1. Apply payment sequentially only to debts of targetType
+        for (const debt of paymentGroup.debts) {
+          if (remainingToPay <= 0) break;
+          if (debt.type !== targetType) continue; 
+          
+          const debtRemaining = debt.amount - (debt.amountPaid || 0);
+          if (debtRemaining <= 0) continue;
+          
+          const amountForThisDebt = Math.min(debtRemaining, remainingToPay);
+          await debtService.payDebt(debt.id, amountForThisDebt);
+          remainingToPay -= amountForThisDebt;
+        }
+
+        // 2. If fully settled, clear the slate by marking all grouped debts as done
+        const isFullSettlement = parseFloat(paymentAmount) >= paymentGroup.netAmount - 0.01;
+        if (isFullSettlement) {
+          for (const debt of paymentGroup.debts) {
+            try {
+              await debtService.markAsDone(debt.id);
+            } catch (e) {
+              console.error('Failed to mark as done', e);
+            }
+          }
+        }
+      }
       setPaymentDebt(null);
+      setPaymentGroup(null);
       setPaymentAmount('');
       triggerRefresh();
     } catch (err) {
@@ -226,6 +273,7 @@ export default function DebtsPage() {
                         user={user}
                         getDeadlineInfo={getDeadlineInfo}
                         setPaymentDebt={setPaymentDebt}
+                        setPaymentGroup={setPaymentGroup}
                         setPaymentAmount={setPaymentAmount}
                         handleMarkAsDone={setDoneDialogId}
                       />
@@ -259,12 +307,12 @@ export default function DebtsPage() {
       )}
 
       {/* Payment modal */}
-      {paymentDebt && (
+      {(paymentDebt || paymentGroup) && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-j-overlay/80 backdrop-blur-[2px] p-4">
           <div className="modal-enter modal-enter-active bg-j-surface w-full max-w-sm rounded-lg shadow-modal border border-j-border">
             <div className="px-5 pt-5 pb-4 border-b border-j-border">
               <h2 className="text-lg font-semibold text-j-ink">Record Payment</h2>
-              <p className="text-sm text-j-ink-3 mt-0.5">{paymentDebt.personName}</p>
+              <p className="text-sm text-j-ink-3 mt-0.5">{paymentDebt ? paymentDebt.personName : paymentGroup.personName}</p>
             </div>
             <form onSubmit={handlePay} className="px-5 py-4 space-y-4">
               <div className="flex flex-col gap-1.5">
@@ -275,7 +323,7 @@ export default function DebtsPage() {
                   type="number"
                   step="0.01"
                   min="0.01"
-                  max={(paymentDebt.amount - (paymentDebt.amountPaid || 0)).toFixed(2)}
+                  max={paymentDebt ? (paymentDebt.amount - (paymentDebt.amountPaid || 0)).toFixed(2) : paymentGroup.netAmount.toFixed(2)}
                   required
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
@@ -285,7 +333,7 @@ export default function DebtsPage() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setPaymentDebt(null)}
+                  onClick={() => { setPaymentDebt(null); setPaymentGroup(null); }}
                   className="flex-1 py-2.5 text-sm font-medium text-j-ink-3 border border-j-border rounded-sm hover:bg-j-surface-raised transition-colors duration-fast"
                 >
                   Cancel
@@ -327,7 +375,7 @@ export default function DebtsPage() {
   );
 }
 
-const GroupedDebtCard = ({ group, activeTab, user, getDeadlineInfo, setPaymentDebt, setPaymentAmount, handleMarkAsDone }) => {
+const GroupedDebtCard = ({ group, activeTab, user, getDeadlineInfo, setPaymentDebt, setPaymentGroup, setPaymentAmount, handleMarkAsDone }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -401,6 +449,15 @@ const GroupedDebtCard = ({ group, activeTab, user, getDeadlineInfo, setPaymentDe
               </div>
             );
           })}
+          
+          <div className="pt-2 flex justify-end">
+            <button
+              onClick={(e) => { e.stopPropagation(); setPaymentGroup(group); setPaymentAmount(group.netAmount.toFixed(2)); }}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-j-accent rounded-sm hover:bg-[#344e70] transition-colors duration-fast"
+            >
+              Settle All
+            </button>
+          </div>
         </div>
       )}
     </Card>
