@@ -91,4 +91,12 @@ public class VaultController {
         vaultService.deleteEntry(auth.getName(), entryId);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/entries/{entryId}")
+    public ResponseEntity<VaultEntryDto> updateEntry(
+            Authentication auth,
+            @PathVariable Long entryId,
+            @Valid @RequestBody VaultEntryRequest request) {
+        return ResponseEntity.ok(vaultService.updateEntry(auth.getName(), entryId, request));
+    }
 }

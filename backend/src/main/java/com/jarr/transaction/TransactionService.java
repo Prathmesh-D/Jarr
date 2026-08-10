@@ -4,6 +4,7 @@ import com.jarr.category.Category;
 import com.jarr.category.CategoryRepository;
 import com.jarr.common.exception.ResourceNotFoundException;
 import com.jarr.common.exception.BadRequestException;
+import com.jarr.common.TransactionType;
 import com.jarr.debt.Debt;
 import com.jarr.debt.DebtRepository;
 import com.jarr.debt.DebtType;
@@ -12,6 +13,9 @@ import com.jarr.transaction.dto.TransactionResponse;
 import com.jarr.transaction.dto.TransactionSplitRequest;
 import com.jarr.user.User;
 import com.jarr.friend.FriendService;
+import com.jarr.vault.VaultEntry;
+import com.jarr.vault.VaultEntryRepository;
+import com.jarr.vault.VaultEntryType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -33,6 +37,7 @@ public class TransactionService {
     private final CategoryRepository categoryRepository;
     private final DebtRepository debtRepository;
     private final FriendService friendService;
+    private final VaultEntryRepository vaultEntryRepository;
 
     @Transactional
     public TransactionResponse createTransaction(User user, TransactionRequest request) {
@@ -50,6 +55,12 @@ public class TransactionService {
                 .note(request.getNote())
                 .paymentMethod(request.getPaymentMethod())
                 .build();
+                
+        if (request.getVaultEntryId() != null) {
+            VaultEntry entry = vaultEntryRepository.findById(request.getVaultEntryId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Vault entry not found"));
+            transaction.setVaultEntry(entry);
+        }
 
         Transaction savedTransaction = transactionRepository.save(transaction);
 
@@ -97,6 +108,17 @@ public class TransactionService {
 
         Transaction updatedTransaction = transactionRepository.save(transaction);
 
+        if (transaction.getVaultEntry() != null) {
+            VaultEntry entry = transaction.getVaultEntry();
+            entry.setAmount(request.getAmount());
+            if (request.getType() == TransactionType.INCOME) {
+                entry.setType(VaultEntryType.WITHDRAWAL);
+            } else {
+                entry.setType(VaultEntryType.DEPOSIT);
+            }
+            vaultEntryRepository.save(entry);
+        }
+
         // Delete old split-debts linked to this transaction
         debtRepository.deleteBySourceTransactionId(id);
 
@@ -132,6 +154,10 @@ public class TransactionService {
         debtRepository.deleteBySourceTransactionId(id);
         
         transactionRepository.delete(transaction);
+        
+        if (transaction.getVaultEntry() != null) {
+            vaultEntryRepository.delete(transaction.getVaultEntry());
+        }
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────

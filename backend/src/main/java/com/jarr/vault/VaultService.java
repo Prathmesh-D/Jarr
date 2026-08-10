@@ -2,6 +2,8 @@ package com.jarr.vault;
 
 import com.jarr.user.User;
 import com.jarr.user.UserRepository;
+import com.jarr.transaction.Transaction;
+import com.jarr.transaction.TransactionRepository;
 import com.jarr.vault.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ public class VaultService {
     private final VaultRepository vaultRepository;
     private final VaultEntryRepository vaultEntryRepository;
     private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
 
     // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -201,6 +204,44 @@ public class VaultService {
             vaultEntryRepository.findById(entry.getLinkedEntryId())
                     .ifPresent(vaultEntryRepository::delete);
         }
+        
+        transactionRepository.findByVaultEntryId(entryId)
+                .ifPresent(transactionRepository::delete);
+                
         vaultEntryRepository.delete(entry);
+    }
+
+    @Transactional
+    public VaultEntryDto updateEntry(String email, Long entryId, VaultEntryRequest request) {
+        VaultEntry entry = vaultEntryRepository.findByIdAndUserEmail(entryId, email)
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
+
+        entry.setAmount(request.amount());
+        entry.setNote(request.note());
+        if (request.entryDate() != null) {
+            entry.setEntryDate(request.entryDate());
+        }
+
+        if (entry.getLinkedEntryId() != null) {
+            vaultEntryRepository.findById(entry.getLinkedEntryId()).ifPresent(linked -> {
+                linked.setAmount(request.amount());
+                linked.setNote(request.note());
+                if (request.entryDate() != null) {
+                    linked.setEntryDate(request.entryDate());
+                }
+                vaultEntryRepository.save(linked);
+            });
+        }
+
+        transactionRepository.findByVaultEntryId(entryId).ifPresent(tx -> {
+            tx.setAmount(request.amount());
+            tx.setNote(request.note());
+            if (request.entryDate() != null) {
+                tx.setTransactionDate(request.entryDate());
+            }
+            transactionRepository.save(tx);
+        });
+
+        return mapEntryToDto(vaultEntryRepository.save(entry));
     }
 }

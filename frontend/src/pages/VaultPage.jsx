@@ -23,7 +23,8 @@ export default function VaultPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editVault, setEditVault] = useState(null);
   const [detailVault, setDetailVault] = useState(null);
-  const [actionMode, setActionMode] = useState(null); // 'deposit'|'withdraw'|'transfer'
+  const [actionMode, setActionMode] = useState(null); // 'deposit'|'withdraw'|'transfer'|'edit'
+  const [editEntry, setEditEntry] = useState(null);
   const [entries, setEntries] = useState([]);
 
   // Fetch all vaults
@@ -86,7 +87,7 @@ export default function VaultPage() {
 
   // Entry actions
   const handleDeposit = async (data) => {
-    await vaultService.deposit(detailVault.id, data);
+    const entry = await vaultService.deposit(detailVault.id, data);
     
     if (data.sourceId === 'main') {
       try {
@@ -100,7 +101,8 @@ export default function VaultPage() {
           type: 'EXPENSE',
           categoryId: expCategory?.id,
           transactionDate: data.entryDate,
-          note: `To Vault: ${detailVault.name}${data.note ? ` - ${data.note}` : ''}`
+          note: `To Vault: ${detailVault.name}${data.note ? ` - ${data.note}` : ''}`,
+          vaultEntryId: entry.id
         });
         fetchDashboardData();
         triggerRefresh();
@@ -114,6 +116,7 @@ export default function VaultPage() {
     }
     
     await refreshDetailVault(detailVault);
+    invalidateVaults();
   };
 
   const handleWithdraw = async (data) => {
@@ -121,6 +124,7 @@ export default function VaultPage() {
       await vaultService.withdraw(detailVault.id, data);
       toast.success('Withdrawn');
       await refreshDetailVault(detailVault);
+      invalidateVaults();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Insufficient balance');
       throw err;
@@ -131,7 +135,7 @@ export default function VaultPage() {
     try {
       if (data.toVaultId === 'main') {
         // Special case: transfer to main tracker
-        await vaultService.withdraw(detailVault.id, {
+        const entry = await vaultService.withdraw(detailVault.id, {
           amount: data.amount,
           note: data.note,
           entryDate: data.entryDate,
@@ -149,6 +153,7 @@ export default function VaultPage() {
             categoryId: incCategory?.id,
             transactionDate: data.entryDate,
             note: `Transfer from Vault: ${detailVault.name}${data.note ? ` - ${data.note}` : ''}`,
+            vaultEntryId: entry.id
           });
           fetchDashboardData();
           triggerRefresh();
@@ -178,6 +183,22 @@ export default function VaultPage() {
       await refreshDetailVault(detailVault);
     } catch {
       toast.error('Failed to delete entry');
+    }
+  };
+
+  const handleEditEntry = async (data) => {
+    try {
+      await vaultService.updateEntry(editEntry.id, data);
+      toast.success('Entry updated');
+      
+      // Since changing amount impacts vault balance, we need to refresh the vault and dashboard
+      await refreshDetailVault(detailVault);
+      invalidateVaults();
+      fetchDashboardData();
+      triggerRefresh();
+    } catch (err) {
+      toast.error('Failed to update entry');
+      throw err;
     }
   };
 
@@ -267,6 +288,7 @@ export default function VaultPage() {
         onClose={() => setDetailVault(null)}
         onManage={(mode) => setActionMode(mode)}
         onDeleteEntry={handleDeleteEntry}
+        onEditEntry={(entry) => { setEditEntry(entry); setActionMode('edit'); }}
         onEdit={() => { setEditVault(detailVault); setDetailVault(null); setCreateOpen(false); setActionMode(null); }}
         onDeleteVault={handleDeleteVault}
       />
@@ -274,12 +296,14 @@ export default function VaultPage() {
       <VaultActionModal
         isOpen={!!actionMode}
         initialMode={actionMode}
-        onClose={() => setActionMode(null)}
+        onClose={() => { setActionMode(null); setEditEntry(null); }}
         vault={detailVault}
         allVaults={vaults}
+        editEntry={editEntry}
         onDeposit={handleDeposit}
         onWithdraw={handleWithdraw}
         onTransfer={handleTransfer}
+        onEdit={handleEditEntry}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import com.jarr.category.Category;
 import com.jarr.debt.Debt;
 import com.jarr.common.TransactionType;
 import com.jarr.user.User;
+import com.jarr.vault.VaultEntry;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -53,6 +54,10 @@ public class Transaction {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "debt_id")
     private Debt debt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vault_entry_id")
+    private VaultEntry vaultEntry;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

@@ -10,13 +10,13 @@ import { AppLoader } from './components/ui/Skeleton';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/AppLayout';
 
-import DashboardPage from './pages/DashboardPage';
-import TransactionsPage from './pages/TransactionsPage';
-import ReportsPage from './pages/ReportsPage';
-import DebtsPage from './pages/DebtsPage';
-import VaultPage from './pages/VaultPage';
-
 // Lazy loaded pages for performance optimization
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage'));
+const DebtsPage = lazy(() => import('./pages/DebtsPage'));
+const VaultPage = lazy(() => import('./pages/VaultPage'));
+
 const WelcomePage = lazy(() => import('./pages/WelcomePage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignUpPage = lazy(() => import('./pages/SignUpPage'));

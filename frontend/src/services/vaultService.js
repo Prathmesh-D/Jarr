@@ -47,4 +47,9 @@ export const vaultService = {
     const response = await api.delete(`/vaults/entries/${entryId}`);
     return response.data;
   },
+
+  updateEntry: async (entryId, data) => {
+    const response = await api.patch(`/vaults/entries/${entryId}`, data);
+    return response.data;
+  },
 };

@@ -6,7 +6,7 @@ import VaultEntryRow from './VaultEntryRow';
 import useBackButtonClose from '../../hooks/useBackButtonClose';
 import { VAULT_ICONS } from './CreateVaultModal';
 
-export default function VaultDetailSheet({ isOpen, vault, entries, currency, allVaults, onClose, onManage, onDeleteEntry, onEdit, onDeleteVault }) {
+export default function VaultDetailSheet({ isOpen, vault, entries, currency, allVaults, onClose, onManage, onDeleteEntry, onEditEntry, onEdit, onDeleteVault }) {
   useBackButtonClose(isOpen, onClose);
   const [deletingEntryId, setDeletingEntryId] = useState(null);
   const [confirmDeleteVault, setConfirmDeleteVault] = useState(false);
@@ -101,6 +101,7 @@ export default function VaultDetailSheet({ isOpen, vault, entries, currency, all
                   deletingId={deletingEntryId}
                   onLongPress={setDeletingEntryId}
                   onCancelDelete={() => setDeletingEntryId(null)}
+                  onEdit={(entry) => { onEditEntry(entry); setDeletingEntryId(null); }}
                   onDelete={(id) => { onDeleteEntry(id); setDeletingEntryId(null); }}
                 />
               ))}

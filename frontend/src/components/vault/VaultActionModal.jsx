@@ -8,9 +8,9 @@ import useBackButtonClose from '../../hooks/useBackButtonClose';
 import { VAULT_ICONS } from './CreateVaultModal';
 import { checkSufficientBalance } from '../../utils/balanceCheck';
 
-export default function VaultActionModal({ isOpen, initialMode, onClose, vault, allVaults, onDeposit, onWithdraw, onTransfer }) {
+export default function VaultActionModal({ isOpen, initialMode, onClose, vault, allVaults, editEntry, onDeposit, onWithdraw, onTransfer, onEdit }) {
   useBackButtonClose(isOpen, onClose);
-  const [mode, setMode] = useState(initialMode || 'deposit'); // 'deposit' | 'withdraw' | 'transfer'
+  const [mode, setMode] = useState(initialMode || 'deposit'); // 'deposit' | 'withdraw' | 'transfer' | 'edit'
 
   const getLocalYMD = () => {
     const d = new Date();
@@ -23,13 +23,21 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
   });
 
   useEffect(() => {
-    if (initialMode && isOpen) {
-      setMode(initialMode);
+    if (isOpen) {
+      setMode(initialMode || 'deposit');
+      if (initialMode === 'edit' && editEntry) {
+        reset({
+          amount: editEntry.amount,
+          note: editEntry.note || '',
+          entryDate: editEntry.entryDate,
+          sourceId: '',
+          toVaultId: ''
+        });
+      } else {
+        reset({ amount: '', note: '', entryDate: getLocalYMD(), toVaultId: '', sourceId: '' });
+      }
     }
-    if (!isOpen) {
-      reset();
-    }
-  }, [initialMode, isOpen, reset]);
+  }, [initialMode, isOpen, editEntry, reset]);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -43,7 +51,9 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
         note: data.note?.trim() || null,
         entryDate: data.entryDate,
       };
-      if (mode === 'deposit') {
+      if (mode === 'edit') {
+        await onEdit(payload);
+      } else if (mode === 'deposit') {
         if (data.sourceId === 'main') {
           const hasSufficient = await checkSufficientBalance(payload.amount);
           if (!hasSufficient) return;
@@ -56,7 +66,6 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
           await onTransfer({ ...payload, toVaultId: data.toVaultId === 'main' ? 'main' : parseInt(data.toVaultId) });
         }
       }
-      reset();
       onClose();
     } finally {
       setSubmitting(false);
@@ -93,21 +102,23 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
         </div>
 
         {/* Mode tabs */}
-        <div className="flex border border-j-border rounded-lg overflow-hidden mb-5">
-          {tabs.map(({ id, label, icon: Icon, color }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => { setMode(id); reset(); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-colors ${
-                mode === id ? 'bg-j-ink text-j-bg' : 'bg-j-surface text-j-ink-3 hover:bg-j-surface-raised'
-              }`}
-            >
-              <Icon size={13} />
-              {label}
-            </button>
-          ))}
-        </div>
+        {mode !== 'edit' && (
+          <div className="flex border border-j-border rounded-lg overflow-hidden mb-5">
+            {tabs.map(({ id, label, icon: Icon, color }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => { setMode(id); reset({ amount: '', note: '', entryDate: getLocalYMD(), toVaultId: '', sourceId: '' }); }}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-colors ${
+                  mode === id ? 'bg-j-ink text-j-bg' : 'bg-j-surface text-j-ink-3 hover:bg-j-surface-raised'
+                }`}
+              >
+                <Icon size={13} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* Amount */}
@@ -179,7 +190,7 @@ export default function VaultActionModal({ isOpen, initialMode, onClose, vault, 
           </div>
 
           <Button type="submit" loading={submitting} className="w-full">
-            {mode === 'deposit' ? 'Deposit' : 'Withdraw'}
+            {mode === 'edit' ? 'Save Changes' : mode === 'deposit' ? 'Deposit' : 'Withdraw'}
           </Button>
         </form>
       </div>

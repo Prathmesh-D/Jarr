@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { transactionService } from '../services/transactionService';
 
 
@@ -9,9 +10,11 @@ export function TransactionProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  const queryClient = useQueryClient();
   const triggerRefresh = useCallback(() => {
     setRefreshTrigger(prev => prev + 1);
-  }, []);
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+  }, [queryClient]);
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);

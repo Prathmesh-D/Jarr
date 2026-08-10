@@ -4,6 +4,7 @@ import com.jarr.common.TransactionType;
 import com.jarr.user.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,12 +15,19 @@ import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     
+    @EntityGraph(attributePaths = {"category"})
     Optional<Transaction> findByIdAndUser(Long id, User user);
     
+    @EntityGraph(attributePaths = {"category"})
+    Optional<Transaction> findByVaultEntryId(Long vaultEntryId);
+    
+    @EntityGraph(attributePaths = {"category"})
     Page<Transaction> findAllByUserOrderByTransactionDateDescCreatedAtDesc(User user, Pageable pageable);
     
+    @EntityGraph(attributePaths = {"category"})
     List<Transaction> findAllByUserAndTransactionDateBetween(User user, LocalDate startDate, LocalDate endDate);
     
+    @EntityGraph(attributePaths = {"category"})
     @Query("SELECT t FROM Transaction t WHERE t.user = :user AND t.type = :type AND t.transactionDate BETWEEN :startDate AND :endDate")
     List<Transaction> findTransactionsByTypeAndDateRange(
             @Param("user") User user, 
